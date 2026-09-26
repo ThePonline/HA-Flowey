@@ -57,6 +57,7 @@ export type TriggerData =
   | DeviceNodeData
   | WeatherData
   | ({ kind: "presence"; event?: PresenceEvent; persons?: string[] } & ZoneRef)
+  | WebhookTriggerData
   | { kind: "state"; entity_id?: string; from?: string; to?: string; for?: Duration }
   | { kind: "time"; at?: string; weekdays?: Weekday[] }
   | { kind: "time_pattern"; hours?: string; minutes?: string; seconds?: string }
@@ -88,6 +89,7 @@ export type ActionData =
   | ({ kind: "delay" } & Duration)
   | WebhookData
   | LightData
+  | WaitData
   | {
       kind: "notify";
       /** "persistent" (HA notification), "service:notify.x" (legacy) or "entity:notify.y" (notify entity). */
@@ -111,6 +113,24 @@ export interface LightData {
   transition?: number;
   /** Kelvin, for "on" and "dim". */
   color_temp?: number;
+}
+
+/** Incoming webhook (e.g. from Homey). The id works like a password: keep it hard to guess. */
+export interface WebhookTriggerData {
+  kind: "webhook";
+  webhook_id?: string;
+  methods?: WebhookMethod[];
+  /** Only accept calls from the local network (HA default). */
+  local_only?: boolean;
+}
+
+export type WebhookMethod = "POST" | "PUT" | "GET" | "HEAD";
+
+/** Wait until a trigger fires, optionally with a maximum time. Outputs: "done" and "timeout". */
+export interface WaitData {
+  kind: "wait";
+  trigger?: TriggerData;
+  timeout?: Duration;
 }
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

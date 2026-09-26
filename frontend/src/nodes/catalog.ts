@@ -1,6 +1,7 @@
 /** The card palette and the texts shown on canvas nodes. Titles and hints are Dutch keys for t(). */
 import { deviceName, entityName, serviceName, type Hass } from "../api/ha";
 import type { FlowNode, NodeType, Weekday } from "../compiler/types";
+import { createId } from "../canvas/graph";
 import type { Translate } from "../i18n";
 
 export interface CatalogItem {
@@ -10,8 +11,15 @@ export interface CatalogItem {
   icon: string;
   title: string;
   hint: string;
-  defaults: Record<string, unknown>;
+  /** Initial card data; a function when every new card needs fresh values (e.g. a secret webhook id). */
+  defaults: Record<string, unknown> | (() => Record<string, unknown>);
 }
+
+/** Random, hard-to-guess webhook id: it works like a password. */
+export const newWebhookId = () => `flowey_${createId().slice(0, 24)}`;
+
+export const catalogDefaults = (item: CatalogItem) =>
+  typeof item.defaults === "function" ? item.defaults() : { ...item.defaults };
 
 export const CATALOG: { title: string; type: NodeType; items: CatalogItem[] }[] = [
   {
@@ -25,6 +33,7 @@ export const CATALOG: { title: string; type: NodeType; items: CatalogItem[] }[] 
       { key: "t-sun", type: "trigger", kind: "sun", icon: "🌅", title: "Zon", hint: "Zonsopkomst of -ondergang (± verschuiving)", defaults: { event: "sunset" } },
       { key: "t-weather", type: "trigger", kind: "weather", icon: "🌦️", title: "Weer", hint: "Het gaat regenen, wordt warm, waait hard…", defaults: { measure: "condition" } },
       { key: "t-presence", type: "trigger", kind: "presence", icon: "🏠", title: "Aanwezigheid", hint: "Iemand komt thuis of vertrekt", defaults: { event: "arrive", zone: "zone.home" } },
+      { key: "t-webhook", type: "trigger", kind: "webhook", icon: "📨", title: "Webhook ontvangen", hint: "Homey of een andere dienst start deze flow", defaults: () => ({ webhook_id: newWebhookId(), methods: ["POST", "PUT"], local_only: true }) },
     ],
   },
   {
@@ -50,6 +59,7 @@ export const CATALOG: { title: string; type: NodeType; items: CatalogItem[] }[] 
       { key: "a-notify", type: "action", kind: "notify", icon: "🔔", title: "Melding sturen", hint: "Naar je telefoon of in Home Assistant", defaults: { target: "persistent" } },
       { key: "a-webhook", type: "action", kind: "webhook", icon: "🌐", title: "Webhook", hint: "Start een flow op Homey of roep een webservice aan", defaults: { mode: "homey" } },
       { key: "a-delay", type: "action", kind: "delay", icon: "⏳", title: "Wachten", hint: "Pauzeer de flow", defaults: { minutes: 1 } },
+      { key: "a-wait", type: "action", kind: "wait", icon: "⏱️", title: "Wacht tot…", hint: "Wacht tot er iets gebeurt, eventueel met een maximum", defaults: { trigger: { kind: "state" } } },
     ],
   },
 ];
@@ -139,7 +149,10 @@ export function describeNode(hass: Hass, node: FlowNode, t: Translate, deviceLab
     if (!device) return { text: t("Kies een apparaat…") };
     const name = deviceName(device);
     const label = deviceLabel ?? data.label;
-    return { subject: name, text: label ? stripDeviceName(label, name) : t("Kies een kaart…") };
+    // Device cards often have a "for" field ("no motion for 2 min"); show it as part of the text.
+    const forText = durationText(data.extra?.for, t);
+    const text = label ? stripDeviceName(label, name) : t("Kies een kaart…");
+    return { subject: name, text: label && forText ? `${text} ${t("({duration} lang)", { duration: forText })}` : text };
   }
   const entity = entityName(hass, data.entity_id);
   switch (`${node.type}:${data.kind}`) {
@@ -276,6 +289,22 @@ export function describeNode(hass: Hass, node: FlowNode, t: Translate, deviceLab
       const target = data.target?.entity_id;
       const targets = (Array.isArray(target) ? target : target ? [target] : []).map((id: string) => entityName(hass, id));
       return targets.length ? { subject: joinNames(targets, t), text: label } : { text: label };
+    }
+    case "trigger:webhook": {
+      const methods = (data.methods?.length ? data.methods : ["POST", "PUT"]).join("/");
+      return {
+        subject: t("Webhook"),
+        text: t("ontvangen via {methods}", { methods }) + (data.local_only === false ? ` · ${t("ook via internet")}` : ""),
+      };
+    }
+    case "action:wait": {
+      if (!data.trigger) return { text: t("Kies waarop gewacht moet worden…") };
+      const inner = describeNode(hass, { id: node.id, type: "trigger", position: node.position, data: data.trigger } as FlowNode, t, deviceLabel);
+      const max = durationText(data.timeout, t);
+      return {
+        subject: inner.subject,
+        text: t("wacht tot: {what}", { what: inner.text }) + (max ? ` ${t("(max {duration})", { duration: max })}` : ""),
+      };
     }
     case "action:delay":
       return { text: t("Wacht {duration}", { duration: durationText(data, t) || "…" }) };

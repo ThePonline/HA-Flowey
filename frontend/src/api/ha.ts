@@ -291,18 +291,34 @@ const NL_CARD_TEXTS: Record<string, string> = {
   "binary_sensor.condition_type.is_no_motion": "{entity_name}: geen beweging",
 };
 
-const labelCache = new Map<string, string>();
+/** A card label before the (renamable) entity name is filled in. */
+export interface CardLabelParts {
+  template?: string;
+  entityId?: string;
+  subtype: string;
+  type: string;
+}
+
+const labelCache = new Map<string, CardLabelParts>();
 const labelKey = (lang: Lang, cardType: CardType, card: DeviceCard) => {
   const { metadata: _metadata, ...clean } = card;
   return `${lang}|${cardType}|${JSON.stringify(clean)}`;
 };
 
-/** Already loaded label, for synchronous rendering. */
-export const cachedCardLabel = (lang: Lang, cardType: CardType, card: DeviceCard) =>
+/** Fills in the current entity name, so renamed devices/entities show up right away. */
+export function formatCardLabel(hass: Hass, parts: CardLabelParts): string {
+  const entity = parts.entityId ? hass.states[parts.entityId]?.attributes.friendly_name ?? parts.entityId : "";
+  return parts.template
+    ? fill(parts.template, { entity_name: entity, subtype: parts.subtype }).trim()
+    : [entity, parts.type.replaceAll("_", " "), parts.subtype].filter(Boolean).join(" ");
+}
+
+/** Already loaded label parts, for synchronous rendering. */
+export const cachedCardLabelParts = (lang: Lang, cardType: CardType, card: DeviceCard) =>
   labelCache.get(labelKey(lang, cardType, card));
 
-/** Human readable card label in the app language, the way the HA automation editor builds it. */
-export async function cardLabel(hass: Hass, lang: Lang, cardType: CardType, card: DeviceCard): Promise<string> {
+/** Label parts in the app language, the way the HA automation editor builds them. */
+export async function cardLabelParts(hass: Hass, lang: Lang, cardType: CardType, card: DeviceCard): Promise<CardLabelParts> {
   const key = labelKey(lang, cardType, card);
   const cached = labelCache.get(key);
   if (cached) return cached;
@@ -311,20 +327,26 @@ export async function cardLabel(hass: Hass, lang: Lang, cardType: CardType, card
     backendResources(hass, lang, "device_automation", card.domain),
     entityRegistryIds(hass),
   ]);
-  const entityId = card.entity_id ? ids.get(card.entity_id) ?? card.entity_id : undefined;
-  const entity = entityId ? hass.states[entityId]?.attributes.friendly_name ?? entityId : "";
   const typeKey = `${cardType}_type`;
-  const subtype = card.subtype
-    ? resources[`component.${card.domain}.device_automation.${cardType}_subtype.${card.subtype}`] ?? card.subtype
-    : "";
-  const template = (lang === "nl" ? NL_CARD_TEXTS[`${card.domain}.${typeKey}.${card.type}`] : undefined) ??
-    resources[`component.${card.domain}.device_automation.${typeKey}.${card.type}`];
-  const label = template
-    ? fill(template, { entity_name: entity, subtype }).trim()
-    : [entity, card.type.replaceAll("_", " "), subtype].filter(Boolean).join(" ");
-  labelCache.set(key, label);
-  return label;
+  const parts: CardLabelParts = {
+    entityId: card.entity_id ? ids.get(card.entity_id) ?? card.entity_id : undefined,
+    subtype: card.subtype
+      ? resources[`component.${card.domain}.device_automation.${cardType}_subtype.${card.subtype}`] ?? card.subtype
+      : "",
+    template: (lang === "nl" ? NL_CARD_TEXTS[`${card.domain}.${typeKey}.${card.type}`] : undefined) ??
+      resources[`component.${card.domain}.device_automation.${typeKey}.${card.type}`],
+    type: card.type,
+  };
+  labelCache.set(key, parts);
+  return parts;
 }
+
+/**
+ * Renames a device the same way HA's device settings do (device registry `name_by_user`);
+ * null restores the integration's own name. Entity names derived from the device follow automatically.
+ */
+export const renameDevice = (hass: Hass, deviceId: string, nameByUser: string | null) =>
+  hass.callWS({ type: "config/device_registry/update", device_id: deviceId, name_by_user: nameByUser });
 
 let serviceNames: Record<string, string> = {};
 /** Loads localized service names for serviceName(); resolves when done. */

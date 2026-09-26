@@ -26,7 +26,12 @@ export function FlowCard({ id, type, data, selected }: NodeProps<CanvasNode>) {
   const nodeType = type as FlowNode["type"];
   const item = catalogItem(nodeType, String(data.kind));
   const node = { id, type: nodeType, position: { x: 0, y: 0 }, data } as FlowNode;
-  const label = useCardLabel(nodeType, data.kind === "device" ? (data.card as DeviceCard | undefined) : undefined);
+  // Device label: of the card itself, or of the device a "wait until" card waits for.
+  const waitFor = data.kind === "wait" ? (data.trigger as { kind?: string; card?: DeviceCard } | undefined) : undefined;
+  const label = useCardLabel(
+    waitFor ? "trigger" : nodeType,
+    data.kind === "device" ? (data.card as DeviceCard | undefined) : waitFor?.kind === "device" ? waitFor.card : undefined,
+  );
   // Header: what the card is about ("ALS Haldeur"); body: what happens ("sensor geopend").
   const { subject, text } = describeNode(hass, node, t, label);
   const heading = subject ?? t(item?.title ?? "");
@@ -41,7 +46,16 @@ export function FlowCard({ id, type, data, selected }: NodeProps<CanvasNode>) {
         {issues.length > 0 && <span className="card-warning" title={issues.map(i => t(i.message)).join("\n")}>⚠</span>}
       </div>
       <div className="card-body">{text}</div>
-      {nodeType === "condition" ? (
+      {data.kind === "wait" ? (
+        <>
+          <Handle id="done" type="source" position={Position.Right} className="handle-yes" style={{ top: "38%" }}>
+            <span className="handle-label">{t("gebeurd")}</span>
+          </Handle>
+          <Handle id="timeout" type="source" position={Position.Right} className="handle-timeout" style={{ top: "78%" }}>
+            <span className="handle-label">{t("tijd verstreken")}</span>
+          </Handle>
+        </>
+      ) : nodeType === "condition" ? (
         <>
           <Handle id="yes" type="source" position={Position.Right} className="handle-yes" style={{ top: "38%" }}>
             <span className="handle-label">{t("ja")}</span>

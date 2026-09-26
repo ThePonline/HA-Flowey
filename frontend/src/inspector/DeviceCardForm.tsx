@@ -5,14 +5,18 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import {
-  cardLabel,
+  cardLabelParts,
   deviceName,
   deviceOptions,
   errorMessage,
+  formatCardLabel,
   getCardCapabilities,
   listDeviceCards,
+  renameDevice,
   type CapabilityField,
+  type CardLabelParts,
   type CardType,
+  type HassDevice,
 } from "../api/ha";
 import type { DeviceCard, DeviceNodeData, Duration } from "../compiler/types";
 import { stableStringify } from "../compiler/compile";
@@ -38,10 +42,13 @@ export function DeviceCardForm({
   cardType,
   data,
   onChange,
+  question,
 }: {
   cardType: CardType;
   data: DeviceNodeData;
   onChange: (data: DeviceNodeData) => void;
+  /** Overrides the default question above the card list (e.g. inside a "wait until" card). */
+  question?: string;
 }) {
   const hass = useHass();
   const { lang, t } = useLang();
@@ -51,7 +58,7 @@ export function DeviceCardForm({
   );
   const device = data.device_id ? hass.devices?.[data.device_id] : undefined;
 
-  const [cards, setCards] = useState<{ card: DeviceCard; label: string }[] | null>(null);
+  const [cards, setCards] = useState<{ card: DeviceCard; parts: CardLabelParts }[] | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -60,16 +67,19 @@ export function DeviceCardForm({
     if (!data.device_id) return;
     let cancelled = false;
     listDeviceCards(hass, cardType, data.device_id)
-      .then(list => Promise.all(list.map(async card => ({ card, label: await cardLabel(hass, lang, cardType, card) }))))
-      .then(list => {
-        if (!cancelled) setCards(list.sort((a, b) => a.label.localeCompare(b.label)));
-      })
+      .then(list => Promise.all(list.map(async card => ({ card, parts: await cardLabelParts(hass, lang, cardType, card) }))))
+      .then(list => !cancelled && setCards(list))
       .catch(err => !cancelled && setError(errorMessage(err)));
     return () => {
       cancelled = true;
     };
     // hass changes on every state update; the card list only depends on the device.
   }, [cardType, data.device_id, lang]);
+
+  // Labels are formatted on every render, so they follow a rename right away.
+  const labelled = (cards ?? [])
+    .map(({ card, parts }) => ({ card, label: formatCardLabel(hass, parts) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   return (
     <>
@@ -81,15 +91,16 @@ export function DeviceCardForm({
           onChange={device_id => onChange({ kind: "device", device_id })}
         />
       </Field>
+      {device && <DeviceRename device={device} />}
 
       {data.device_id && (
         <div className="field">
-          <span className="field-label">{t(CARD_QUESTION[cardType])}</span>
+          <span className="field-label">{t(question ?? CARD_QUESTION[cardType])}</span>
           {error && <div className="issue">{error}</div>}
           {!cards && !error && <div className="muted">{t("Kaarten laden…")}</div>}
           {cards?.length === 0 && <div className="muted">{t("Dit apparaat heeft geen kaarten van dit type.")}</div>}
           <div className="card-list">
-            {cards?.map(({ card, label }) => (
+            {labelled.map(({ card, label }) => (
               <button
                 type="button"
                 key={stableStringify(card)}
@@ -112,6 +123,73 @@ export function DeviceCardForm({
         />
       )}
     </>
+  );
+}
+
+/**
+ * Renames the device in Home Assistant itself (device registry `name_by_user`), exactly like
+ * Settings → Devices → ✏️ does, so the new name is used everywhere in HA.
+ */
+function DeviceRename({ device }: { device: HassDevice }) {
+  const hass = useHass();
+  const t = useT();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  // Typing the integration's own name again clears name_by_user, just like in HA.
+  const save = async (value: string | null) => {
+    setBusy(true);
+    setError("");
+    try {
+      await renameDevice(hass, device.id, value === null || value === device.name ? null : value);
+      setEditing(false);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className="rename-row">
+        <button type="button" className="link-btn" onClick={() => {
+          setName(deviceName(device));
+          setEditing(true);
+        }}>✏️ {t("Apparaat hernoemen")}</button>
+      </div>
+    );
+  }
+
+  const trimmed = name.trim();
+  return (
+    <div className="field rename-box">
+      <span className="field-label">{t("Nieuwe naam voor dit apparaat")}</span>
+      <input className="input" value={name} autoFocus onChange={event => setName(event.target.value)}
+        onKeyDown={event => {
+          if (event.key === "Enter" && trimmed) void save(trimmed);
+          if (event.key === "Escape") setEditing(false);
+        }} />
+      <span className="field-hint">
+        {t("De naam wordt in Home Assistant zelf aangepast en is overal in HA zichtbaar. Entiteit-ID's blijven gelijk, zodat bestaande automations blijven werken.")}
+      </span>
+      {error && <span className="issue">{error}</span>}
+      <div className="rename-actions">
+        <button type="button" className="btn small-btn" disabled={busy || !trimmed} onClick={() => void save(trimmed)}>
+          {t("Opslaan")}
+        </button>
+        <button type="button" className="btn secondary small-btn" disabled={busy} onClick={() => setEditing(false)}>
+          {t("Annuleren")}
+        </button>
+        {device.name_by_user && device.name && (
+          <button type="button" className="link-btn" disabled={busy} onClick={() => void save(null)}>
+            {t("Oorspronkelijke naam herstellen ({name})", { name: device.name })}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

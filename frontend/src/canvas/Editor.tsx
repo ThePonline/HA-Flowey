@@ -20,7 +20,7 @@ import { IssuesContext, toast, useHass } from "../context";
 import { applyEnabled, ExternalChange, publishFlow, saveDraft } from "../flowActions";
 import { useT } from "../i18n";
 import { Inspector } from "../inspector/Inspector";
-import { CATALOG, type CatalogItem } from "../nodes/catalog";
+import { CATALOG, catalogDefaults, type CatalogItem } from "../nodes/catalog";
 import { DeletableEdge, FlowCard } from "./FlowCard";
 import {
   canConnect,
@@ -127,7 +127,7 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
     let connection: Connection | undefined;
 
     if (anchor && item.type !== "trigger") {
-      const handle = anchor.type === "condition" ? "yes" : "out";
+      const handle = anchor.type === "condition" ? "yes" : anchor.data.kind === "wait" ? "done" : "out";
       const siblings = edges.filter(edge => edge.source === anchor.id && edge.sourceHandle === handle).length;
       position = { x: anchor.position.x + 320, y: anchor.position.y + siblings * 130 };
       connection = { source: anchor.id, sourceHandle: handle, target: id, targetHandle: null };
@@ -140,7 +140,7 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
       position = { x: center.x - 120 + (nodes.length % 5) * 20, y: center.y - 40 + (nodes.length % 5) * 20 };
     }
 
-    const node: CanvasNode = { id, type: item.type, position, data: { kind: item.kind, ...item.defaults }, selected: true };
+    const node: CanvasNode = { id, type: item.type, position, data: { kind: item.kind, ...catalogDefaults(item) }, selected: true };
     setNodes(current => [...current.map(n => ({ ...n, selected: false })), node]);
     if (connection) {
       const edge = connection;

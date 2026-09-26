@@ -321,6 +321,82 @@ describe("light card", () => {
   });
 });
 
+describe("webhook trigger", () => {
+  const compileHook = (data: Record<string, unknown>) => compileFlow(flow(
+    [trigger("h", { kind: "webhook", ...data } as any), lightOn], [edge("h", "light")],
+  ));
+
+  it("compiles with HA defaults (POST/PUT, local only)", () => {
+    expect(compileHook({ webhook_id: "flowey_abc123" }).config.triggers).toEqual([
+      { trigger: "webhook", webhook_id: "flowey_abc123", allowed_methods: ["POST", "PUT"], local_only: true, id: "h" },
+    ]);
+  });
+
+  it("uses the chosen methods and internet access", () => {
+    expect(compileHook({ webhook_id: "x", methods: ["GET", "POST"], local_only: false }).config.triggers[0]).toEqual({
+      trigger: "webhook", webhook_id: "x", allowed_methods: ["GET", "POST"], local_only: false, id: "h",
+    });
+  });
+
+  it("rejects missing or unsafe ids", () => {
+    expect(compileHook({}).errors.map(e => e.message)).toEqual(["Het webhook-ID mag alleen letters, cijfers, - en _ bevatten."]);
+    expect(compileHook({ webhook_id: "a/b" }).errors).toHaveLength(1);
+  });
+});
+
+describe("wait card", () => {
+  const noMotion = { kind: "state" as const, entity_id: "binary_sensor.pir", to: "off", for: { minutes: 2 } };
+  const lightOff = action("off", { kind: "service", service: "light.turn_off", target: { entity_id: "light.hal" } });
+  const notify = action("notify", { kind: "notify", message: "Nog steeds beweging" });
+  const wait = (data: Record<string, unknown>) => action("w", { kind: "wait", ...data } as any);
+  const waitFlow = (data: Record<string, unknown>, edges: FlowEdge[], extra: FlowNode[] = []) => compileFlow(flow(
+    [trigger("t", doorOpened), lightOn, wait(data), lightOff, ...extra],
+    [edge("t", "light"), edge("light", "w"), ...edges],
+  ));
+  const waitStep = { wait_for_trigger: [{ trigger: "state", entity_id: "binary_sensor.pir", to: "off", for: { minutes: 2 } }] };
+  const offStep = { action: "light.turn_off", target: { entity_id: "light.hal" } };
+
+  it("waits without a maximum, then continues", () => {
+    const result = waitFlow({ trigger: noMotion }, [edge("w", "off", "done")]);
+    expect(result.errors).toEqual([]);
+    expect(result.config.actions).toEqual([
+      { action: "light.turn_on", target: { entity_id: "light.hal" } },
+      waitStep,
+      offStep,
+    ]);
+  });
+
+  it("stops at the maximum when only 'gebeurd' is connected", () => {
+    const result = waitFlow({ trigger: noMotion, timeout: { minutes: 30 } }, [edge("w", "off", "done")]);
+    expect(result.config.actions.slice(1)).toEqual([
+      { ...waitStep, timeout: { minutes: 30 }, continue_on_timeout: false },
+      offStep,
+    ]);
+  });
+
+  it("branches on timeout when both outputs are connected", () => {
+    const result = waitFlow(
+      { trigger: noMotion, timeout: { minutes: 30 } },
+      [edge("w", "off", "done"), edge("w", "notify", "timeout")],
+      [notify],
+    );
+    expect(result.config.actions.slice(1)).toEqual([
+      { ...waitStep, timeout: { minutes: 30 }, continue_on_timeout: true },
+      {
+        if: [{ condition: "template", value_template: "{{ wait.trigger is none }}" }],
+        then: [{ action: "persistent_notification.create", data: { message: "Nog steeds beweging" } }],
+        else: [offStep],
+      },
+    ]);
+  });
+
+  it("reports a missing trigger and warns about an unused timeout path", () => {
+    expect(waitFlow({}, [edge("w", "off", "done")]).errors.map(e => e.message)).toEqual(["Kies waarop gewacht moet worden."]);
+    const warned = waitFlow({ trigger: noMotion }, [edge("w", "notify", "timeout")], [notify]);
+    expect(warned.warnings.map(w => w.message)).toContain("Stel een maximale wachttijd in; anders wordt 'tijd verstreken' nooit gebruikt.");
+  });
+});
+
 describe("hashConfig", () => {
   it("ignores key order", () => {
     expect(hashConfig({ a: 1, b: [{ c: 2, d: 3 }] })).toBe(hashConfig({ b: [{ d: 3, c: 2 }], a: 1 }));

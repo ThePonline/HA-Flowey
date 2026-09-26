@@ -22,6 +22,7 @@ import type {
   FlowRecord,
   HaStep,
   TriggerData,
+  WaitData,
   WeatherData,
   WebhookData,
 } from "./types";
@@ -31,6 +32,7 @@ export const MANAGED_MARKER = "Beheerd door HA Flow Builder — bewerk deze flow
 
 export const automationId = (flowId: string) => `${AUTOMATION_ID_PREFIX}${flowId}`;
 
+const WEBHOOK_ID_RE = /^[A-Za-z0-9_-]+$/;
 const OFFSET_RE = /^[+-]?\d{1,2}:\d{2}(:\d{2})?$/;
 const TIME_RE = /^\d{1,2}:\d{2}(:\d{2})?$/;
 
@@ -65,6 +67,7 @@ export function compileFlow(flow: FlowRecord): CompileResult {
     }
     visiting.add(node.id);
     try {
+      if (node.type === "action" && node.data.kind === "wait") return compileWait(node.id, node.data);
       if (node.type === "action") {
         const step = actionStep(node.id, node.data, errors);
         return [...(step ? [step] : []), ...compileBranch(outgoing(node.id, "out"))];
@@ -83,6 +86,37 @@ export function compileFlow(flow: FlowRecord): CompileResult {
     } finally {
       visiting.delete(node.id);
     }
+  };
+
+  /**
+   * wait_for_trigger with optional timeout. HA continues after a timeout by default, so
+   * continue_on_timeout is set explicitly: only when the "tijd verstreken" path is used.
+   */
+  const compileWait = (nodeId: string, data: WaitData): HaStep[] => {
+    let waitTrigger: HaStep = {};
+    if (!data.trigger) errors.push({ nodeId, message: "Kies waarop gewacht moet worden." });
+    else {
+      const step = triggerStep(nodeId, data.trigger, errors);
+      if (step) {
+        const { id: _id, ...rest } = step;
+        waitTrigger = rest;
+      }
+    }
+    const timeout = duration(data.timeout);
+    const done = compileBranch(outgoing(nodeId, "done"));
+    const timedOut = compileBranch(outgoing(nodeId, "timeout"));
+    if (!timeout && timedOut.length) {
+      warnings.push({ nodeId, message: "Stel een maximale wachttijd in; anders wordt 'tijd verstreken' nooit gebruikt." });
+    }
+    const wait = clean({
+      wait_for_trigger: [waitTrigger],
+      timeout,
+      continue_on_timeout: timeout ? timedOut.length > 0 : undefined,
+    });
+    if (!timeout || timedOut.length === 0) return [wait, ...done];
+    const timedOutCondition = { condition: "template", value_template: "{{ wait.trigger is none }}" };
+    if (done.length === 0) return [wait, { if: [timedOutCondition], then: timedOut }];
+    return [wait, { if: [timedOutCondition], then: timedOut, else: done }];
   };
 
   const triggerNodes = nodes
@@ -205,6 +239,18 @@ function triggerStep(nodeId: string, data: TriggerData, errors: CompileIssue[]):
     case "weather": {
       const step = weatherStep("trigger", data, fail);
       return step && { ...step, id: nodeId };
+    }
+    case "webhook": {
+      if (!data.webhook_id || !WEBHOOK_ID_RE.test(data.webhook_id)) {
+        return fail("Het webhook-ID mag alleen letters, cijfers, - en _ bevatten.");
+      }
+      return {
+        trigger: "webhook",
+        webhook_id: data.webhook_id,
+        allowed_methods: data.methods?.length ? data.methods : ["POST", "PUT"],
+        local_only: data.local_only ?? true,
+        id: nodeId,
+      };
     }
     case "presence": {
       const zone = data.zone || "zone.home";
@@ -343,6 +389,9 @@ function actionStep(nodeId: string, data: ActionData, errors: CompileIssue[]): H
       if (!delay) return fail("Vul een wachttijd in.");
       return { delay };
     }
+    case "wait":
+      // Has two outputs, so it is compiled in compileFlow (compileWait).
+      return null;
     case "light": {
       if (!data.entities?.length) return fail("Kies minstens één lamp.");
       const action = data.action ?? "on";

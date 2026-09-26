@@ -374,6 +374,56 @@ export const EN: Record<string, string> = {
   "Scripts": "Scripts",
   "Automatiseringen": "Automations",
 
+  // Rename device
+  "Apparaat hernoemen": "Rename device",
+  "Nieuwe naam voor dit apparaat": "New name for this device",
+  "De naam wordt in Home Assistant zelf aangepast en is overal in HA zichtbaar. Entiteit-ID's blijven gelijk, zodat bestaande automations blijven werken.":
+    "The name is changed in Home Assistant itself and is visible everywhere in HA. Entity IDs stay the same, so existing automations keep working.",
+  "Opslaan": "Save",
+  "Annuleren": "Cancel",
+  "Oorspronkelijke naam herstellen ({name})": "Restore original name ({name})",
+
+  // Webhook received
+  "Webhook ontvangen": "Webhook received",
+  "Homey of een andere dienst start deze flow": "Homey or another service starts this flow",
+  "ontvangen via {methods}": "received via {methods}",
+  "ook via internet": "also via internet",
+  "Gebruik in Homey een kaart die een webverzoek (HTTP) verstuurt, bijvoorbeeld uit de app \"HTTP request flow cards\", met het adres hieronder. Homey Pro in je eigen netwerk kan het lokale adres gebruiken.":
+    "In Homey, use a card that sends a web request (HTTP), for example from the \"HTTP request flow cards\" app, with the address below. A Homey Pro on your own network can use the local address.",
+  "Adres in je eigen netwerk": "Address on your own network",
+  "Adres via internet": "Address via internet",
+  "Stel in Home Assistant een extern adres in (Instellingen → Systeem → Netwerk, of Nabu Casa) om de webhook via internet te gebruiken.":
+    "Set an external address in Home Assistant (Settings → System → Network, or Nabu Casa) to use the webhook via the internet.",
+  "Alleen vanuit mijn eigen netwerk (aanbevolen)": "Only from my own network (recommended)",
+  "Toegestane methodes": "Allowed methods",
+  "Werkt als wachtwoord: iedereen met dit adres kan de flow starten.": "Works like a password: anyone with this address can start the flow.",
+  "Het oude adres werkt daarna niet meer.": "The old address stops working.",
+  "Nieuw ID": "New ID",
+  "Meegestuurde gegevens gebruik je in latere kaarten met {{ trigger.json.naam }} (JSON) of {{ trigger.query.naam }} (URL-parameters).":
+    "Use data that was sent along in later cards with {{ trigger.json.name }} (JSON) or {{ trigger.query.name }} (URL parameters).",
+  "Nu testen": "Test now",
+  "Verstuurd (HTTP {status}). Kijk bij Traces of de flow is gestart.": "Sent (HTTP {status}). Check Traces to see whether the flow started.",
+  "Kopiëren": "Copy",
+  "Gekopieerd": "Copied",
+
+  // Wait until
+  "Wacht tot…": "Wait until…",
+  "Waarop moet de flow wachten?": "What should the flow wait for?",
+  "Wacht tot er iets gebeurt, eventueel met een maximum": "Wait until something happens, optionally with a maximum",
+  "Kies waarop gewacht moet worden…": "Choose what to wait for…",
+  "wacht tot: {what}": "wait until: {what}",
+  "(max {duration})": "(max {duration})",
+  "gebeurd": "happened",
+  "tijd verstreken": "timed out",
+  "Maximaal wachten (optioneel)": "Wait at most (optional)",
+  "Na deze tijd gaat de flow verder via 'tijd verstreken'. Zonder maximum wacht de flow tot het gebeurt.":
+    "After this time the flow continues via 'timed out'. Without a maximum the flow waits until it happens.",
+  "Voorbeeld: ALS beweging → Lamp aan → Wacht tot \"geen beweging, 2 min lang\" → Lamp uit. Met \"Opnieuw starten als hij al loopt\" begint het wachten opnieuw bij nieuwe beweging.":
+    "Example: WHEN motion → Light on → Wait until \"no motion for 2 min\" → Light off. With \"Restart if already running\" the wait starts over on new motion.",
+  "Kies waarop gewacht moet worden.": "Choose what to wait for.",
+  "Stel een maximale wachttijd in; anders wordt 'tijd verstreken' nooit gebruikt.": "Set a maximum wait time; otherwise 'timed out' is never used.",
+  "Het webhook-ID mag alleen letters, cijfers, - en _ bevatten.": "The webhook ID may only contain letters, digits, - and _.",
+
   // Compiler messages
   "Deze flow bevat een lus.": "This flow contains a loop.",
   "Een trigger kan niet midden in een flow staan.": "A trigger cannot be in the middle of a flow.",

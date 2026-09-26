@@ -65,6 +65,14 @@ ha-flow-builder-panel { display: block; height: 100%; }
 .flowey .slider-row { display: flex; align-items: center; gap: 8px; }
 .flowey .slider-row input[type=range] { flex: 1; accent-color: var(--fl-primary); }
 .flowey .slider-row .input { width: 80px; flex: none; }
+.flowey .rename-row { margin: -8px 0 16px; }
+.flowey .rename-box { padding: 10px; border-radius: 10px; background: var(--fl-bg); }
+.flowey .rename-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.flowey .link-btn { border: 0; background: transparent; color: var(--fl-primary); cursor: pointer; font: inherit; font-size: 13px; padding: 2px 0; }
+.flowey .link-btn:disabled { opacity: 0.5; }
+.flowey .copy-row { display: flex; gap: 6px; align-items: center; }
+.flowey .copy-row .input { flex: 1; min-width: 0; }
+.flowey .nested { border-left: 3px solid var(--fl-divider); padding-left: 10px; margin-bottom: 16px; }
 .flowey .success { color: var(--success-color, #43a047); font-size: 13px; margin: 4px 0; word-break: break-word; }
 .flowey .header-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
 .flowey .small-btn { align-self: flex-start; padding: 6px 12px; font-size: 13px; }
@@ -157,6 +165,8 @@ ha-flow-builder-panel { display: block; height: 100%; }
 .flowey .handle-out { background: var(--fl-primary); }
 .flowey .handle-yes { background: var(--fl-yes); }
 .flowey .handle-no { background: var(--fl-no); }
+.flowey .handle-timeout { background: var(--fl-action); }
+.flowey .handle-timeout .handle-label { color: var(--fl-action); white-space: nowrap; }
 .flowey .handle-label {
   position: absolute; left: 16px; top: -8px; font-size: 10px; font-weight: 700; pointer-events: none;
 }
@@ -165,6 +175,8 @@ ha-flow-builder-panel { display: block; height: 100%; }
 .flowey .react-flow__edge-path { stroke-width: 2.5; stroke: var(--fl-muted); }
 .flowey .react-flow__edge.edge-yes .react-flow__edge-path { stroke: var(--fl-yes); }
 .flowey .react-flow__edge.edge-no .react-flow__edge-path { stroke: var(--fl-no); }
+.flowey .react-flow__edge.edge-done .react-flow__edge-path { stroke: var(--fl-yes); }
+.flowey .react-flow__edge.edge-timeout .react-flow__edge-path { stroke: var(--fl-action); stroke-dasharray: 6 4; }
 .flowey .react-flow__edge.selected .react-flow__edge-path { stroke: var(--fl-primary); stroke-width: 3.5; }
 .flowey .edge-delete {
   position: absolute; pointer-events: all; width: 24px; height: 24px; border-radius: 50%;

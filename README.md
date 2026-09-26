@@ -29,7 +29,8 @@ Je configuratie moet `automation: !include automations.yaml` bevatten. Dat staat
 | | | Wachten |
 | Zon (op/onder ± verschuiving) | Zon (na/voor ± verschuiving) | |
 | Weer (wordt regen/zonnig/…, temperatuur/wind/vochtigheid boven/onder) | Weer | |
-| Aanwezigheid (iemand komt/vertrekt, eerste komt/laatste vertrekt, per zone) | Aanwezigheid (iemand/niemand, personen wel/niet in zone) | |
+| Aanwezigheid (iemand komt/vertrekt, eerste komt/laatste vertrekt, per zone) | Aanwezigheid (iemand/niemand, personen wel/niet in zone) | Wacht tot… (met maximum; uitgangen *gebeurd* / *tijd verstreken*) |
+| Webhook ontvangen (bijv. vanuit Homey) | | |
 
 Regels op het canvas:
 - Meerdere lijnen uit één uitgang lopen **parallel**.
@@ -45,6 +46,29 @@ Eén flow met twee triggers:
 
 Let op de richting: "van off naar on, 2 min lang" betekent "al 2 minuten beweging" en zet het licht dus uit terwijl je er nog bent.
 Toont de Lamp-kaart dat HA een lamp niet als dimbaar ziet, dan negeert HA de helderheid; controleer dan in HA (Ontwikkelhulpmiddelen → Toestanden) de `supported_color_modes` van die lamp.
+
+## Wacht tot…
+
+De kaart **Wacht tot…** wacht tot er iets gebeurt (dezelfde keuzes als een ALS-kaart), eventueel met een maximale wachttijd.
+Via **gebeurd** gaat de flow verder als het gebeurde, via **tijd verstreken** als het maximum bereikt is.
+
+Voorbeeld licht op beweging in één flow: **ALS** beweging → 💡 aan → **Wacht tot** *geen beweging, 2 min lang* → 💡 uit.
+Met de flow-instelling *Opnieuw starten als hij al loopt* begint het wachten opnieuw bij nieuwe beweging.
+Let op: een lopende wachttijd overleeft geen herstart van Home Assistant.
+
+## Homey → Home Assistant (webhook ontvangen)
+
+Met de ALS-kaart **Webhook ontvangen** start Homey (of een andere dienst) een flow in Home Assistant:
+
+1. Voeg de kaart toe; er wordt een geheim adres gemaakt, bijv. `http://homeassistant.local:8123/api/webhook/flowey_…`.
+2. Laat Homey een webverzoek (POST) naar dat adres sturen, bijvoorbeeld met een kaart uit de app *HTTP request flow cards*.
+3. Meegestuurde gegevens gebruik je verderop met `{{ trigger.json.naam }}`.
+
+Standaard werkt het adres alleen vanuit je eigen netwerk (Homey Pro). Voor Homey Cloud zet je dat uit en gebruik je het externe adres van Home Assistant (bijv. Nabu Casa). Het webhook-ID werkt als wachtwoord.
+
+## Apparaten hernoemen
+
+Bij elke apparaatkaart staat **✏️ Apparaat hernoemen**. De naam wordt in Home Assistant zelf aangepast (net als via Instellingen → Apparaten) en is dus overal in HA zichtbaar. Entiteit-ID's blijven gelijk, zodat bestaande automations en dashboards blijven werken. Met *Oorspronkelijke naam herstellen* ga je terug naar de naam van de integratie.
 
 ## Homey-apparaten aansturen (webhook)
 

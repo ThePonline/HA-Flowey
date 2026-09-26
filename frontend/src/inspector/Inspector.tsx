@@ -3,10 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { parse, stringify } from "yaml";
 import { callWebhookNow, entityName, entityOptions, errorMessage, serviceName, type Hass } from "../api/ha";
 import { WEBHOOK_ACTION, webhookRequest } from "../compiler/compile";
-import type { CompileIssue, FlowNode, HttpMethod, LightAction, WebhookData } from "../compiler/types";
+import type { CompileIssue, FlowNode, HttpMethod, LightAction, WebhookData, WebhookMethod } from "../compiler/types";
 import { useHass } from "../context";
 import { useT, type Translate } from "../i18n";
-import { catalogItem, WEATHER_CONDITIONS, WEATHER_MEASURES } from "../nodes/catalog";
+import { catalogDefaults, catalogItem, newWebhookId, WEATHER_CONDITIONS, WEATHER_MEASURES } from "../nodes/catalog";
 import { DeviceCardForm } from "./DeviceCardForm";
 import { DurationInput, Field, OffsetInput, SearchSelect, WeekdayPicker, type SearchOption } from "./fields";
 
@@ -152,6 +152,10 @@ function KindForm({ type, data, set }: { type: FlowNode["type"]; data: Data; set
     case "trigger:presence":
     case "condition:presence":
       return <PresenceForm type={type} data={data} set={set} />;
+    case "trigger:webhook":
+      return <WebhookTriggerForm data={data} set={set} />;
+    case "action:wait":
+      return <WaitForm data={data} set={set} />;
     case "action:light":
       return <LightForm data={data} set={set} />;
     case "action:webhook":
@@ -645,6 +649,131 @@ function LightForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
           ⚠ {t("Home Assistant ziet {lamps} niet als dimbaar; de helderheid wordt daar genegeerd. Controleer in HA of dit een lamp met dimfunctie is.", { lamps: notDimmable.map(id => entityName(hass, id)).join(", ") })}
         </div>
       )}
+    </>
+  );
+}
+
+const WEBHOOK_METHODS: WebhookMethod[] = ["POST", "PUT", "GET", "HEAD"];
+
+/** Copyable, read-only URL field. */
+function CopyField({ label, value }: { label: string; value: string }) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+  return (
+    <Field label={label}>
+      <div className="copy-row">
+        <input className="input code" readOnly value={value} onFocus={event => event.target.select()} />
+        <button type="button" className="btn secondary small-btn" onClick={() => {
+          navigator.clipboard?.writeText(value).then(() => setCopied(true), () => setCopied(false));
+        }}>{copied ? t("Gekopieerd") : t("Kopiëren")}</button>
+      </div>
+    </Field>
+  );
+}
+
+function WebhookTriggerForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
+  const hass = useHass();
+  const t = useT();
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const config = (hass as unknown as { config?: { internal_url?: string | null; external_url?: string | null } }).config ?? {};
+  const path = `/api/webhook/${data.webhook_id ?? ""}`;
+  const localBase = (config.internal_url || window.location.origin).replace(/\/$/, "");
+  const externalBase = config.external_url?.replace(/\/$/, "");
+  const localOnly = data.local_only ?? true;
+  const methods: WebhookMethod[] = data.methods?.length ? data.methods : ["POST", "PUT"];
+
+  const toggleMethod = (method: WebhookMethod) => {
+    const next = methods.includes(method) ? methods.filter(m => m !== method) : [...methods, method];
+    if (next.length) set({ methods: WEBHOOK_METHODS.filter(m => next.includes(m)) });
+  };
+
+  const test = async () => {
+    const method = methods.includes("POST") ? "POST" : methods[0];
+    const withBody = method === "POST" || method === "PUT";
+    try {
+      const response = await fetch(path, {
+        method,
+        headers: withBody ? { "Content-Type": "application/json" } : undefined,
+        body: withBody ? JSON.stringify({ tag: "test" }) : undefined,
+      });
+      setResult({ ok: response.ok, text: t("Verstuurd (HTTP {status}). Kijk bij Traces of de flow is gestart.", { status: response.status }) });
+    } catch (error) {
+      setResult({ ok: false, text: errorMessage(error) });
+    }
+  };
+
+  return (
+    <>
+      <p className="muted">
+        {t("Gebruik in Homey een kaart die een webverzoek (HTTP) verstuurt, bijvoorbeeld uit de app \"HTTP request flow cards\", met het adres hieronder. Homey Pro in je eigen netwerk kan het lokale adres gebruiken.")}
+      </p>
+      <CopyField label="Adres in je eigen netwerk" value={`${localBase}${path}`} />
+      {!localOnly && (externalBase
+        ? <CopyField label="Adres via internet" value={`${externalBase}${path}`} />
+        : <div className="issue">{t("Stel in Home Assistant een extern adres in (Instellingen → Systeem → Netwerk, of Nabu Casa) om de webhook via internet te gebruiken.")}</div>)}
+      <label className="checkbox">
+        <input type="checkbox" checked={localOnly} onChange={event => set({ local_only: event.target.checked })} />
+        {t("Alleen vanuit mijn eigen netwerk (aanbevolen)")}
+      </label>
+      <Field label="Toegestane methodes">
+        <div className="chips">
+          {WEBHOOK_METHODS.map(method => (
+            <button type="button" key={method} className={`chip ${methods.includes(method) ? "on" : ""}`} onClick={() => toggleMethod(method)}>
+              {method}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Webhook-ID" hint="Werkt als wachtwoord: iedereen met dit adres kan de flow starten.">
+        <div className="copy-row">
+          <input className="input code" value={data.webhook_id ?? ""} onChange={event => set({ webhook_id: event.target.value.trim() })} />
+          <button type="button" className="btn secondary small-btn" title={t("Het oude adres werkt daarna niet meer.")}
+            onClick={() => set({ webhook_id: newWebhookId() })}>{t("Nieuw ID")}</button>
+        </div>
+      </Field>
+      <p className="muted">
+        {t("Meegestuurde gegevens gebruik je in latere kaarten met {{ trigger.json.naam }} (JSON) of {{ trigger.query.naam }} (URL-parameters).")}
+      </p>
+      <div className="field">
+        <button type="button" className="btn secondary" onClick={test}>{t("Nu testen")}</button>
+        {result && <span className={result.ok ? "success" : "issue"}>{result.ok ? "✔" : "✘"} {result.text}</span>}
+      </div>
+    </>
+  );
+}
+
+/** Trigger kinds a "wait until" card can wait for. */
+const WAIT_KINDS = ["device", "state", "time", "sun", "weather", "presence", "webhook"];
+
+function WaitForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
+  const t = useT();
+  const inner: Data = data.trigger ?? { kind: "state" };
+  const setInner = (next: Data) => set({ trigger: next });
+
+  return (
+    <>
+      <Field label="Wacht tot…">
+        <select className="input" value={inner.kind} onChange={event => {
+          const item = catalogItem("trigger", event.target.value);
+          setInner({ kind: event.target.value, ...(item ? catalogDefaults(item) : {}) });
+        }}>
+          {WAIT_KINDS.map(kind => <option key={kind} value={kind}>{t(catalogItem("trigger", kind)?.title ?? kind)}</option>)}
+        </select>
+      </Field>
+      <div className="nested">
+        {inner.kind === "device" ? (
+          <DeviceCardForm cardType="trigger" data={inner as any} question="Waarop moet de flow wachten?"
+            onChange={next => setInner({ ...next })} />
+        ) : (
+          <KindForm type="trigger" data={inner} set={patch => setInner({ ...inner, ...patch })} />
+        )}
+      </div>
+      <Field label="Maximaal wachten (optioneel)" hint="Na deze tijd gaat de flow verder via 'tijd verstreken'. Zonder maximum wacht de flow tot het gebeurt.">
+        <DurationInput value={data.timeout} onChange={timeout => set({ timeout })} />
+      </Field>
+      <p className="muted">
+        {t("Voorbeeld: ALS beweging → Lamp aan → Wacht tot \"geen beweging, 2 min lang\" → Lamp uit. Met \"Opnieuw starten als hij al loopt\" begint het wachten opnieuw bij nieuwe beweging.")}
+      </p>
     </>
   );
 }
