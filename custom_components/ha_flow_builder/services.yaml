@@ -1,0 +1,36 @@
+call_webhook:
+  fields:
+    url:
+      required: true
+      example: "https://webhook.homey.app/<homey-id>/lampen_aan"
+      selector:
+        text:
+          type: url
+    method:
+      default: POST
+      selector:
+        select:
+          options:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+    headers:
+      selector:
+        object:
+    payload:
+      selector:
+        text:
+          multiline: true
+    timeout:
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: s
+    verify_ssl:
+      default: true
+      selector:
+        boolean:

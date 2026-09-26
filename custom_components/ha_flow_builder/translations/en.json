@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HA Flow Builder",
+        "description": "Adds the Flows panel to the sidebar. Flows are saved as regular Home Assistant automations."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "HA Flow Builder is already set up."
+    }
+  },
+  "services": {
+    "call_webhook": {
+      "name": "Call webhook",
+      "description": "Sends an HTTP request, for example to trigger a flow on Homey.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Address to call, starting with http:// or https://."
+        },
+        "method": {
+          "name": "Method",
+          "description": "HTTP method."
+        },
+        "headers": {
+          "name": "Headers",
+          "description": "Extra HTTP headers, e.g. Authorization."
+        },
+        "payload": {
+          "name": "Body",
+          "description": "Request body. Text is sent as-is; a mapping is sent as JSON."
+        },
+        "timeout": {
+          "name": "Timeout",
+          "description": "Seconds to wait for a response."
+        },
+        "verify_ssl": {
+          "name": "Verify SSL",
+          "description": "Check the HTTPS certificate."
+        }
+      }
+    }
+  }
+}

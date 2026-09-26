@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HA Flow Builder",
+        "description": "Voegt het paneel Flows toe aan de zijbalk. Flows worden opgeslagen als gewone Home Assistant-automatiseringen."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "HA Flow Builder is al ingesteld."
+    }
+  },
+  "services": {
+    "call_webhook": {
+      "name": "Webhook aanroepen",
+      "description": "Stuurt een HTTP-verzoek, bijvoorbeeld om een flow op Homey te starten.",
+      "fields": {
+        "url": {
+          "name": "URL",
+          "description": "Adres om aan te roepen, beginnend met http:// of https://."
+        },
+        "method": {
+          "name": "Methode",
+          "description": "HTTP-methode."
+        },
+        "headers": {
+          "name": "Headers",
+          "description": "Extra HTTP-headers, bijv. Authorization."
+        },
+        "payload": {
+          "name": "Body",
+          "description": "Inhoud van het verzoek. Tekst wordt letterlijk verstuurd; een mapping als JSON."
+        },
+        "timeout": {
+          "name": "Time-out",
+          "description": "Aantal seconden wachten op antwoord."
+        },
+        "verify_ssl": {
+          "name": "SSL controleren",
+          "description": "Controleer het HTTPS-certificaat."
+        }
+      }
+    }
+  }
+}

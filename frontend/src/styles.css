@@ -1,0 +1,261 @@
+ha-flow-builder-panel { display: block; height: 100%; }
+
+.flowey {
+  --fl-trigger: #43a047;
+  --fl-condition: #1e88e5;
+  --fl-action: #fb8c00;
+  --fl-yes: #43a047;
+  --fl-no: #e53935;
+  --fl-bg: var(--primary-background-color, #fafafa);
+  --fl-card: var(--card-background-color, #fff);
+  --fl-text: var(--primary-text-color, #212121);
+  --fl-muted: var(--secondary-text-color, #727272);
+  --fl-divider: var(--divider-color, rgba(0, 0, 0, 0.12));
+  --fl-primary: var(--primary-color, #03a9f4);
+  --fl-error: var(--error-color, #db4437);
+  --fl-radius: 14px;
+  height: 100%;
+  min-height: 100vh;
+  background: var(--fl-bg);
+  color: var(--fl-text);
+  font-family: var(--paper-font-body1_-_font-family, Roboto, "Segoe UI", sans-serif);
+  font-size: 14px;
+}
+.flowey *, .flowey *::before, .flowey *::after { box-sizing: border-box; }
+.flowey h1, .flowey h2, .flowey h3 { margin: 0; font-weight: 500; }
+.flowey code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+.flowey .muted { color: var(--fl-muted); }
+.flowey .small { font-size: 12px; }
+
+/* Buttons & inputs ------------------------------------------------------- */
+.flowey .btn {
+  border: 0; border-radius: 20px; padding: 9px 16px; cursor: pointer; white-space: nowrap;
+  background: var(--fl-primary); color: var(--text-primary-color, #fff); font: inherit; font-weight: 600;
+}
+.flowey .btn:disabled { opacity: 0.5; cursor: default; }
+.flowey .btn.secondary { background: transparent; color: var(--fl-text); border: 1px solid var(--fl-divider); }
+.flowey .btn.danger-outline { background: transparent; color: var(--fl-error); border: 1px solid var(--fl-error); width: 100%; }
+.flowey .icon-btn {
+  border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 18px;
+  width: 36px; height: 36px; border-radius: 50%; flex: none;
+}
+.flowey .icon-btn:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.06)); }
+.flowey .icon-btn.danger { color: var(--fl-error); }
+.flowey .input {
+  width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--fl-divider);
+  background: var(--fl-card); color: inherit; font: inherit;
+}
+.flowey .input:focus { outline: 2px solid var(--fl-primary); outline-offset: -1px; }
+.flowey textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; resize: vertical; }
+.flowey .badge {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.03em; padding: 4px 9px; border-radius: 10px;
+  background: var(--secondary-background-color, rgba(0, 0, 0, 0.06)); white-space: nowrap;
+}
+.flowey .status-enabled { background: rgba(67, 160, 71, 0.18); color: var(--fl-trigger); }
+.flowey .status-modified, .flowey .status-missing, .flowey .status-unpublished { background: rgba(251, 140, 0, 0.18); color: var(--fl-action); }
+.flowey .switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+.flowey .switch input { width: 18px; height: 18px; accent-color: var(--fl-primary); }
+.flowey .banner {
+  margin: 12px 16px 0; padding: 10px 14px; border-radius: 10px;
+  background: rgba(251, 140, 0, 0.14); border-left: 4px solid var(--fl-action);
+}
+.flowey .issue { color: var(--fl-error); font-size: 13px; margin: 4px 0 8px; }
+.flowey .issue.pre { white-space: pre-wrap; word-break: break-all; }
+.flowey .inspector .banner { margin: 0 0 16px; }
+.flowey .slider-row { display: flex; align-items: center; gap: 8px; }
+.flowey .slider-row input[type=range] { flex: 1; accent-color: var(--fl-primary); }
+.flowey .slider-row .input { width: 80px; flex: none; }
+.flowey .success { color: var(--success-color, #43a047); font-size: 13px; margin: 4px 0; word-break: break-word; }
+.flowey .header-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+.flowey .small-btn { align-self: flex-start; padding: 6px 12px; font-size: 13px; }
+
+/* Overview --------------------------------------------------------------- */
+.flowey .page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.flowey .page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.flowey .page-head > div { flex: 1; }
+.flowey .page-head h1 { font-size: 28px; }
+.flowey .empty {
+  padding: 48px 24px; text-align: center; border: 1px dashed var(--fl-divider);
+  border-radius: 18px; background: var(--fl-card);
+}
+.flowey .big { font-size: 48px; margin-bottom: 8px; }
+.flowey .flow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.flowey .flow-tile {
+  background: var(--fl-card); border-radius: 18px; padding: 16px 18px; cursor: pointer;
+  box-shadow: var(--ha-card-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.12)); display: flex; flex-direction: column; gap: 10px;
+  border-top: 4px solid var(--fl-trigger);
+}
+.flowey .flow-tile:hover { outline: 2px solid var(--fl-primary); }
+.flowey .flow-tile-head { display: flex; align-items: flex-start; gap: 8px; }
+.flowey .flow-tile-head h2 { flex: 1; font-size: 17px; }
+.flowey .flow-tile-triggers { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.flowey .flow-tile-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.flowey .flow-tile-actions .switch { flex: 1; }
+
+/* Editor layout ---------------------------------------------------------- */
+.flowey .editor { display: flex; flex-direction: column; height: 100vh; }
+.flowey .toolbar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; flex-wrap: wrap;
+  background: var(--app-header-background-color, var(--fl-card)); color: var(--app-header-text-color, var(--fl-text));
+  border-bottom: 1px solid var(--fl-divider);
+}
+.flowey .toolbar .btn.secondary { color: inherit; }
+.flowey .flow-name {
+  border: 0; background: transparent; color: inherit; font: inherit; font-size: 18px; font-weight: 600;
+  padding: 6px 8px; border-radius: 8px; min-width: 120px; max-width: 360px; flex: 1;
+}
+.flowey .flow-name:focus { outline: 2px solid var(--fl-primary); }
+.flowey .toolbar-spacer { flex: 1; }
+.flowey .toolbar .mode { width: auto; }
+.flowey .workspace { position: relative; flex: 1; display: flex; min-height: 0; }
+.flowey .canvas { position: relative; flex: 1; min-width: 0; }
+.flowey .canvas-empty {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px; pointer-events: none; z-index: 5;
+}
+
+/* Palette ---------------------------------------------------------------- */
+.flowey .palette {
+  width: 250px; flex: none; overflow-y: auto; padding: 12px; background: var(--fl-card);
+  border-right: 1px solid var(--fl-divider); display: none;
+}
+.flowey .palette.open { display: block; }
+.flowey .palette-group { margin-bottom: 16px; }
+.flowey .palette-group h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 8px; }
+.flowey .palette-group.type-trigger h3 { color: var(--fl-trigger); }
+.flowey .palette-group.type-condition h3 { color: var(--fl-condition); }
+.flowey .palette-group.type-action h3 { color: var(--fl-action); }
+.flowey .palette-item {
+  display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 8px 10px; margin-bottom: 6px;
+  border-radius: 10px; border: 1px solid var(--fl-divider); background: var(--fl-bg); color: inherit; font: inherit; cursor: grab;
+}
+.flowey .palette-item:hover { border-color: var(--fl-primary); }
+.flowey .palette-icon { font-size: 20px; }
+.flowey .palette-text { display: flex; flex-direction: column; }
+.flowey .palette-text small { color: var(--fl-muted); font-size: 11px; }
+
+/* Cards on the canvas ---------------------------------------------------- */
+.flowey .card {
+  width: 240px; background: var(--fl-card); color: var(--fl-text); border-radius: var(--fl-radius);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18); border: 2px solid transparent; overflow: visible;
+}
+.flowey .card.selected { border-color: var(--fl-primary); }
+.flowey .card.has-issue { border-color: var(--fl-error); border-style: dashed; }
+.flowey .card-head {
+  display: flex; align-items: center; gap: 6px; padding: 7px 10px; color: #fff;
+  border-radius: calc(var(--fl-radius) - 2px) calc(var(--fl-radius) - 2px) 0 0; font-size: 12px;
+}
+.flowey .card.type-trigger .card-head { background: var(--fl-trigger); }
+.flowey .card.type-condition .card-head { background: var(--fl-condition); }
+.flowey .card.type-action .card-head { background: var(--fl-action); }
+.flowey .card-type { font-weight: 800; letter-spacing: 0.08em; }
+.flowey .card-kind { flex: 1; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flowey .card-warning { font-size: 14px; }
+.flowey .card-body { padding: 10px 12px 12px; line-height: 1.35; min-height: 44px; }
+.flowey .react-flow__handle { width: 14px; height: 14px; border: 2px solid var(--fl-card); }
+.flowey .handle-in { background: var(--fl-muted); }
+.flowey .handle-out { background: var(--fl-primary); }
+.flowey .handle-yes { background: var(--fl-yes); }
+.flowey .handle-no { background: var(--fl-no); }
+.flowey .handle-label {
+  position: absolute; left: 16px; top: -8px; font-size: 10px; font-weight: 700; pointer-events: none;
+}
+.flowey .handle-yes .handle-label { color: var(--fl-yes); }
+.flowey .handle-no .handle-label { color: var(--fl-no); }
+.flowey .react-flow__edge-path { stroke-width: 2.5; stroke: var(--fl-muted); }
+.flowey .react-flow__edge.edge-yes .react-flow__edge-path { stroke: var(--fl-yes); }
+.flowey .react-flow__edge.edge-no .react-flow__edge-path { stroke: var(--fl-no); }
+.flowey .react-flow__edge.selected .react-flow__edge-path { stroke: var(--fl-primary); stroke-width: 3.5; }
+.flowey .edge-delete {
+  position: absolute; pointer-events: all; width: 24px; height: 24px; border-radius: 50%;
+  border: 0; background: var(--fl-error); color: #fff; cursor: pointer; font-size: 16px; line-height: 1;
+}
+.flowey .minimap-trigger { fill: var(--fl-trigger); }
+.flowey .minimap-condition { fill: var(--fl-condition); }
+.flowey .minimap-action { fill: var(--fl-action); }
+.flowey .react-flow { --xy-background-color: var(--fl-bg); --xy-controls-button-background-color: var(--fl-card);
+  --xy-controls-button-color: var(--fl-text); --xy-minimap-background-color: var(--fl-card); }
+
+/* Inspector -------------------------------------------------------------- */
+.flowey .inspector {
+  width: 340px; flex: none; display: flex; flex-direction: column; background: var(--fl-card);
+  border-left: 1px solid var(--fl-divider); min-height: 0;
+}
+.flowey .inspector-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; color: #fff; }
+.flowey .inspector.type-trigger .inspector-head { background: var(--fl-trigger); }
+.flowey .inspector.type-condition .inspector-head { background: var(--fl-condition); }
+.flowey .inspector.type-action .inspector-head { background: var(--fl-action); }
+.flowey .inspector-icon { font-size: 24px; }
+.flowey .inspector-title { flex: 1; font-size: 16px; font-weight: 600; }
+.flowey .eyebrow { font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.flowey .inspector-body { flex: 1; overflow-y: auto; padding: 14px; }
+.flowey .inspector-foot { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--fl-divider); }
+.flowey .inspector-foot .btn { flex: 1; }
+.flowey .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.flowey .field-label { font-weight: 600; font-size: 13px; }
+.flowey .field-hint { font-size: 12px; color: var(--fl-muted); }
+.flowey .checkbox { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+.flowey .card-list { display: grid; gap: 6px; }
+.flowey .card-option {
+  text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--fl-divider);
+  background: var(--fl-bg); color: inherit; font: inherit; cursor: pointer;
+}
+.flowey .card-option:hover { border-color: var(--fl-primary); }
+.flowey .card-option.selected { border: 2px solid var(--fl-primary); font-weight: 600; }
+.flowey .duration { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.flowey .duration-part { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--fl-muted); }
+.flowey .offset { display: grid; gap: 6px; }
+.flowey .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.flowey .chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 6px 11px; border-radius: 16px;
+  border: 1px solid var(--fl-divider); background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.flowey .chip.on { background: var(--fl-primary); border-color: var(--fl-primary); color: var(--text-primary-color, #fff); }
+.flowey .chip-x { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 15px; padding: 0 0 0 2px; }
+
+/* Search select ---------------------------------------------------------- */
+.flowey .search-select { position: relative; }
+.flowey .search-list {
+  position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; max-height: 320px; overflow-y: auto;
+  background: var(--fl-card); border: 1px solid var(--fl-divider); border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+.flowey .search-group {
+  position: sticky; top: 0; padding: 6px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--fl-muted); background: var(--fl-card);
+}
+.flowey .search-option {
+  display: flex; flex-direction: column; width: 100%; text-align: left; padding: 7px 12px; border: 0;
+  background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.flowey .search-option:hover, .flowey .search-option.selected { background: var(--secondary-background-color, rgba(0, 0, 0, 0.06)); }
+.flowey .search-secondary { font-size: 11px; color: var(--fl-muted); }
+.flowey .search-empty { padding: 10px 12px; color: var(--fl-muted); }
+
+/* YAML dialog ------------------------------------------------------------ */
+.flowey .overlay {
+  position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.45);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.flowey .dialog {
+  background: var(--fl-card); border-radius: 16px; padding: 18px 20px; width: min(760px, 100%);
+  max-height: 90vh; display: flex; flex-direction: column; gap: 8px;
+}
+.flowey .dialog-head { display: flex; align-items: center; justify-content: space-between; }
+.flowey .yaml {
+  flex: 1; overflow: auto; margin: 0; padding: 12px; border-radius: 10px; background: var(--fl-bg);
+  font-family: ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.45;
+}
+.flowey .issue-list { margin: 0; padding-left: 18px; color: var(--fl-error); }
+
+/* Narrow screens --------------------------------------------------------- */
+.flowey .fab { position: absolute; left: 12px; bottom: 16px; z-index: 30; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); }
+@media (max-width: 800px) {
+  .flowey .page { padding: 14px; }
+  .flowey .palette { position: absolute; inset: 0 auto 0 0; z-index: 25; width: min(300px, 85vw); box-shadow: 4px 0 16px rgba(0, 0, 0, 0.25); }
+  .flowey .inspector {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 26; width: auto; max-height: 65%;
+    border-left: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  }
+  .flowey .toolbar .mode { display: none; }
+  .flowey .react-flow__controls { bottom: 64px; }
+}
