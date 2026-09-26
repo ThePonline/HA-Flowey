@@ -19,6 +19,13 @@ import type { CanvasNode } from "./graph";
 
 export const TYPE_LABEL = { trigger: "ALS", condition: "EN", action: "DAN" } as const;
 
+/** Cards with two outputs: [handle id, label, css class] for the upper and lower output. */
+const TWO_OUTPUTS: Record<string, [string, string, string][]> = {
+  condition: [["yes", "ja", "handle-yes"], ["no", "nee", "handle-no"]],
+  wait: [["done", "gebeurd", "handle-yes"], ["timeout", "tijd verstreken", "handle-timeout"]],
+  repeat: [["loop", "herhaal", "handle-loop"], ["done", "klaar", "handle-yes"]],
+};
+
 export function FlowCard({ id, type, data, selected }: NodeProps<CanvasNode>) {
   const hass = useHass();
   const t = useT();
@@ -28,10 +35,13 @@ export function FlowCard({ id, type, data, selected }: NodeProps<CanvasNode>) {
   const node = { id, type: nodeType, position: { x: 0, y: 0 }, data } as FlowNode;
   // Device label: of the card itself, or of the device a "wait until" card waits for.
   const waitFor = data.kind === "wait" ? (data.trigger as { kind?: string; card?: DeviceCard } | undefined) : undefined;
+  const repeatWhile = data.kind === "repeat" ? (data.condition as { kind?: string; card?: DeviceCard } | undefined) : undefined;
+  const nested = waitFor ?? repeatWhile;
   const label = useCardLabel(
-    waitFor ? "trigger" : nodeType,
-    data.kind === "device" ? (data.card as DeviceCard | undefined) : waitFor?.kind === "device" ? waitFor.card : undefined,
+    waitFor ? "trigger" : repeatWhile ? "condition" : nodeType,
+    data.kind === "device" ? (data.card as DeviceCard | undefined) : nested?.kind === "device" ? nested.card : undefined,
   );
+  const outputs = TWO_OUTPUTS[String(data.kind)] ?? (nodeType === "condition" ? TWO_OUTPUTS.condition : undefined);
   // Header: what the card is about ("ALS Haldeur"); body: what happens ("sensor geopend").
   const { subject, text } = describeNode(hass, node, t, label);
   const heading = subject ?? t(item?.title ?? "");
@@ -46,23 +56,14 @@ export function FlowCard({ id, type, data, selected }: NodeProps<CanvasNode>) {
         {issues.length > 0 && <span className="card-warning" title={issues.map(i => t(i.message)).join("\n")}>⚠</span>}
       </div>
       <div className="card-body">{text}</div>
-      {data.kind === "wait" ? (
+      {outputs ? (
         <>
-          <Handle id="done" type="source" position={Position.Right} className="handle-yes" style={{ top: "38%" }}>
-            <span className="handle-label">{t("gebeurd")}</span>
-          </Handle>
-          <Handle id="timeout" type="source" position={Position.Right} className="handle-timeout" style={{ top: "78%" }}>
-            <span className="handle-label">{t("tijd verstreken")}</span>
-          </Handle>
-        </>
-      ) : nodeType === "condition" ? (
-        <>
-          <Handle id="yes" type="source" position={Position.Right} className="handle-yes" style={{ top: "38%" }}>
-            <span className="handle-label">{t("ja")}</span>
-          </Handle>
-          <Handle id="no" type="source" position={Position.Right} className="handle-no" style={{ top: "78%" }}>
-            <span className="handle-label">{t("nee")}</span>
-          </Handle>
+          {outputs.map(([handle, text, className], index) => (
+            <Handle key={handle} id={handle} type="source" position={Position.Right} className={className}
+              style={{ top: index === 0 ? "38%" : "78%" }}>
+              <span className="handle-label">{t(text)}</span>
+            </Handle>
+          ))}
         </>
       ) : (
         <Handle id="out" type="source" position={Position.Right} className="handle-out" />

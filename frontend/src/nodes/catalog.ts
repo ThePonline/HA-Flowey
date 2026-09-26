@@ -33,6 +33,7 @@ export const CATALOG: { title: string; type: NodeType; items: CatalogItem[] }[] 
       { key: "t-sun", type: "trigger", kind: "sun", icon: "🌅", title: "Zon", hint: "Zonsopkomst of -ondergang (± verschuiving)", defaults: { event: "sunset" } },
       { key: "t-weather", type: "trigger", kind: "weather", icon: "🌦️", title: "Weer", hint: "Het gaat regenen, wordt warm, waait hard…", defaults: { measure: "condition" } },
       { key: "t-presence", type: "trigger", kind: "presence", icon: "🏠", title: "Aanwezigheid", hint: "Iemand komt thuis of vertrekt", defaults: { event: "arrive", zone: "zone.home" } },
+      { key: "t-timer", type: "trigger", kind: "timer_finished", icon: "⏲️", title: "Timer afgelopen", hint: "Een timer is klaar met aftellen", defaults: {} },
       { key: "t-webhook", type: "trigger", kind: "webhook", icon: "📨", title: "Webhook ontvangen", hint: "Homey of een andere dienst start deze flow", defaults: () => ({ webhook_id: newWebhookId(), methods: ["POST", "PUT"], local_only: true }) },
     ],
   },
@@ -46,6 +47,7 @@ export const CATALOG: { title: string; type: NodeType; items: CatalogItem[] }[] 
       { key: "c-time", type: "condition", kind: "time", icon: "🕘", title: "Tijd & dagen", hint: "Tussen twee tijden / op weekdagen", defaults: { after: "22:00", before: "07:00" } },
       { key: "c-sun", type: "condition", kind: "sun", icon: "🌇", title: "Zon", hint: "Na zonsondergang / voor zonsopkomst", defaults: { after: "sunset" } },
       { key: "c-weather", type: "condition", kind: "weather", icon: "🌦️", title: "Weer", hint: "Het regent, het is kouder dan…", defaults: { measure: "condition" } },
+      { key: "c-timer", type: "condition", kind: "timer", icon: "⏲️", title: "Timer loopt", hint: "Een timer telt (niet) af", defaults: { check: "running" } },
       { key: "c-presence", type: "condition", kind: "presence", icon: "🏠", title: "Aanwezigheid", hint: "Iemand thuis, niemand thuis, …", defaults: { check: "someone", zone: "zone.home" } },
     ],
   },
@@ -59,6 +61,8 @@ export const CATALOG: { title: string; type: NodeType; items: CatalogItem[] }[] 
       { key: "a-notify", type: "action", kind: "notify", icon: "🔔", title: "Melding sturen", hint: "Naar je telefoon of in Home Assistant", defaults: { target: "persistent" } },
       { key: "a-webhook", type: "action", kind: "webhook", icon: "🌐", title: "Webhook", hint: "Start een flow op Homey of roep een webservice aan", defaults: { mode: "homey" } },
       { key: "a-delay", type: "action", kind: "delay", icon: "⏳", title: "Wachten", hint: "Pauzeer de flow", defaults: { minutes: 1 } },
+      { key: "a-timer", type: "action", kind: "timer", icon: "⏲️", title: "Timer", hint: "Start, stop of pauzeer een timer (overleeft een herstart)", defaults: { action: "start" } },
+      { key: "a-repeat", type: "action", kind: "repeat", icon: "🔂", title: "Herhaal", hint: "Herhaal kaarten x keer, of zolang/totdat iets geldt", defaults: { mode: "count", count: 3 } },
       { key: "a-wait", type: "action", kind: "wait", icon: "⏱️", title: "Wacht tot…", hint: "Wacht tot er iets gebeurt, eventueel met een maximum", defaults: { trigger: { kind: "state" } } },
     ],
   },
@@ -304,6 +308,35 @@ export function describeNode(hass: Hass, node: FlowNode, t: Translate, deviceLab
       return {
         subject: inner.subject,
         text: t("wacht tot: {what}", { what: inner.text }) + (max ? ` ${t("(max {duration})", { duration: max })}` : ""),
+      };
+    }
+    case "trigger:timer_finished":
+      return data.entity_id ? { subject: entityName(hass, data.entity_id), text: t("is afgelopen") } : { text: t("Kies een timer…") };
+    case "condition:timer":
+      return data.entity_id
+        ? { subject: entityName(hass, data.entity_id), text: data.check === "not_running" ? t("loopt niet") : t("loopt") }
+        : { text: t("Kies een timer…") };
+    case "action:timer": {
+      if (!data.entity_id) return { text: t("Kies een timer…") };
+      const subject = entityName(hass, data.entity_id);
+      switch (data.action ?? "start") {
+        case "cancel": return { subject, text: t("stoppen") };
+        case "pause": return { subject, text: t("pauzeren") };
+        case "finish": return { subject, text: t("direct laten aflopen") };
+        default: {
+          const length = durationText(data.duration, t);
+          return { subject, text: length ? t("starten ({duration})", { duration: length }) : t("starten") };
+        }
+      }
+    }
+    case "action:repeat": {
+      const mode = data.mode ?? "count";
+      if (mode === "count") return { text: t("Herhaal {count}×", { count: data.count ?? "…" }) };
+      if (!data.condition) return { text: t("Kies de voorwaarde…") };
+      const what = describeNodeLine(hass, { id: node.id, type: "condition", position: node.position, data: data.condition } as FlowNode, t, deviceLabel);
+      return {
+        text: t(mode === "while" ? "Herhaal zolang: {what}" : "Herhaal totdat: {what}", { what }) +
+          ` ${t("(max {max}×)", { max: data.max ?? 10 })}`,
       };
     }
     case "action:delay":

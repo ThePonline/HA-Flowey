@@ -127,7 +127,10 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
     let connection: Connection | undefined;
 
     if (anchor && item.type !== "trigger") {
-      const handle = anchor.type === "condition" ? "yes" : anchor.data.kind === "wait" ? "done" : "out";
+      const handle = anchor.type === "condition" ? "yes"
+        : anchor.data.kind === "wait" ? "done"
+        : anchor.data.kind === "repeat" ? "loop"
+        : "out";
       const siblings = edges.filter(edge => edge.source === anchor.id && edge.sourceHandle === handle).length;
       position = { x: anchor.position.x + 320, y: anchor.position.y + siblings * 130 };
       connection = { source: anchor.id, sourceHandle: handle, target: id, targetHandle: null };

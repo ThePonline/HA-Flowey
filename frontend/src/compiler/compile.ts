@@ -22,6 +22,7 @@ import type {
   FlowRecord,
   HaStep,
   TriggerData,
+  RepeatData,
   WaitData,
   WeatherData,
   WebhookData,
@@ -68,6 +69,7 @@ export function compileFlow(flow: FlowRecord): CompileResult {
     visiting.add(node.id);
     try {
       if (node.type === "action" && node.data.kind === "wait") return compileWait(node.id, node.data);
+      if (node.type === "action" && node.data.kind === "repeat") return compileRepeat(node.id, node.data);
       if (node.type === "action") {
         const step = actionStep(node.id, node.data, errors);
         return [...(step ? [step] : []), ...compileBranch(outgoing(node.id, "out"))];
@@ -92,6 +94,39 @@ export function compileFlow(flow: FlowRecord): CompileResult {
    * wait_for_trigger with optional timeout. HA continues after a timeout by default, so
    * continue_on_timeout is set explicitly: only when the "tijd verstreken" path is used.
    */
+  /**
+   * repeat with count/while/until. while/until get a maximum number of rounds as a safety net,
+   * so a condition that never changes cannot keep the automation running forever.
+   */
+  const compileRepeat = (nodeId: string, data: RepeatData): HaStep[] => {
+    const body = compileBranch(outgoing(nodeId, "loop"));
+    const after = compileBranch(outgoing(nodeId, "done"));
+    if (!body.length) {
+      errors.push({ nodeId, message: "Verbind de uitgang 'herhaal' met de kaarten die herhaald moeten worden." });
+    }
+    const mode = data.mode ?? "count";
+    let repeat: HaStep;
+    if (mode === "count") {
+      const count = toNumber(data.count);
+      if (!count || !Number.isInteger(count) || count < 1 || count > 1000) {
+        errors.push({ nodeId, message: "Vul een aantal keer in (1–1000)." });
+      }
+      repeat = { count: count ?? 1, sequence: body };
+    } else {
+      const condition = data.condition ? conditionStep(nodeId, data.condition, errors) : null;
+      if (!data.condition) errors.push({ nodeId, message: "Kies de voorwaarde voor de herhaling." });
+      const max = toNumber(data.max) ?? 10;
+      if (!Number.isInteger(max) || max < 1 || max > 1000) errors.push({ nodeId, message: "Het maximum moet tussen 1 en 1000 liggen." });
+      repeat = mode === "while"
+        ? { while: [condition ?? {}, { condition: "template", value_template: `{{ repeat.index <= ${max} }}` }], sequence: body }
+        : {
+            until: [{ condition: "or", conditions: [condition ?? {}, { condition: "template", value_template: `{{ repeat.index >= ${max} }}` }] }],
+            sequence: body,
+          };
+    }
+    return [{ repeat }, ...after];
+  };
+
   const compileWait = (nodeId: string, data: WaitData): HaStep[] => {
     let waitTrigger: HaStep = {};
     if (!data.trigger) errors.push({ nodeId, message: "Kies waarop gewacht moet worden." });
@@ -240,6 +275,9 @@ function triggerStep(nodeId: string, data: TriggerData, errors: CompileIssue[]):
       const step = weatherStep("trigger", data, fail);
       return step && { ...step, id: nodeId };
     }
+    case "timer_finished":
+      if (!data.entity_id) return fail("Kies een timer.");
+      return { trigger: "event", event_type: "timer.finished", event_data: { entity_id: data.entity_id }, id: nodeId };
     case "webhook": {
       if (!data.webhook_id || !WEBHOOK_ID_RE.test(data.webhook_id)) {
         return fail("Het webhook-ID mag alleen letters, cijfers, - en _ bevatten.");
@@ -342,6 +380,11 @@ function conditionStep(nodeId: string, data: ConditionData, errors: CompileIssue
     }
     case "weather":
       return weatherStep("condition", data, fail);
+    case "timer": {
+      if (!data.entity_id) return fail("Kies een timer.");
+      const active = { condition: "state", entity_id: data.entity_id, state: "active" };
+      return data.check === "not_running" ? { condition: "not", conditions: [active] } : active;
+    }
     case "presence": {
       const zone = data.zone || "zone.home";
       const inZone = zoneState(zone, data.zone_state);
@@ -390,8 +433,19 @@ function actionStep(nodeId: string, data: ActionData, errors: CompileIssue[]): H
       return { delay };
     }
     case "wait":
-      // Has two outputs, so it is compiled in compileFlow (compileWait).
+    case "repeat":
+      // Have two outputs, so they are compiled in compileFlow (compileWait / compileRepeat).
       return null;
+    case "timer": {
+      if (!data.entity_id) return fail("Kies een timer.");
+      const action = data.action ?? "start";
+      const timerDuration = action === "start" ? duration(data.duration) : undefined;
+      return clean({
+        action: `timer.${action}`,
+        target: { entity_id: data.entity_id },
+        data: timerDuration ? { duration: timerDuration } : undefined,
+      });
+    }
     case "light": {
       if (!data.entities?.length) return fail("Kies minstens één lamp.");
       const action = data.action ?? "on";

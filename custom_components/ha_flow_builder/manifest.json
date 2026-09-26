@@ -3,7 +3,7 @@
   "name": "HA Flow Builder",
   "codeowners": [],
   "config_flow": true,
-  "dependencies": ["http", "frontend", "panel_custom", "websocket_api", "automation", "webhook"],
+  "dependencies": ["http", "frontend", "panel_custom", "websocket_api", "automation", "webhook", "timer"],
   "documentation": "https://github.com/example/ha-flow-builder",
   "integration_type": "service",
   "iot_class": "calculated",

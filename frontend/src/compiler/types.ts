@@ -58,6 +58,7 @@ export type TriggerData =
   | WeatherData
   | ({ kind: "presence"; event?: PresenceEvent; persons?: string[] } & ZoneRef)
   | WebhookTriggerData
+  | { kind: "timer_finished"; entity_id?: string }
   | { kind: "state"; entity_id?: string; from?: string; to?: string; for?: Duration }
   | { kind: "time"; at?: string; weekdays?: Weekday[] }
   | { kind: "time_pattern"; hours?: string; minutes?: string; seconds?: string }
@@ -65,6 +66,7 @@ export type TriggerData =
 
 export type ConditionData =
   | DeviceNodeData
+  | { kind: "timer"; entity_id?: string; check?: "running" | "not_running" }
   | WeatherData
   | ({ kind: "presence"; check?: PresenceCheck; persons?: string[] } & ZoneRef)
   | { kind: "state"; entity_id?: string; state?: string }
@@ -90,6 +92,8 @@ export type ActionData =
   | WebhookData
   | LightData
   | WaitData
+  | RepeatData
+  | TimerActionData
   | {
       kind: "notify";
       /** "persistent" (HA notification), "service:notify.x" (legacy) or "entity:notify.y" (notify entity). */
@@ -127,6 +131,25 @@ export interface WebhookTriggerData {
 export type WebhookMethod = "POST" | "PUT" | "GET" | "HEAD";
 
 /** Wait until a trigger fires, optionally with a maximum time. Outputs: "done" and "timeout". */
+/** HA timer helper (timer.*): survives restarts and can be shared between flows. */
+export interface TimerActionData {
+  kind: "timer";
+  entity_id?: string;
+  action?: "start" | "cancel" | "pause" | "finish";
+  /** For "start": overrides the timer's own duration. */
+  duration?: Duration;
+}
+
+/** Repeat the cards on the "loop" output; afterwards continue via "done". */
+export interface RepeatData {
+  kind: "repeat";
+  mode?: "count" | "while" | "until";
+  count?: number | string;
+  condition?: ConditionData;
+  /** Safety limit for while/until. */
+  max?: number | string;
+}
+
 export interface WaitData {
   kind: "wait";
   trigger?: TriggerData;

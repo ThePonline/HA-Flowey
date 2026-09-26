@@ -397,6 +397,90 @@ describe("wait card", () => {
   });
 });
 
+describe("timer cards", () => {
+  const TIMER = "timer.nalooptijd_bijkeuken";
+
+  it("starts a timer (optionally with a duration) and reacts when it finishes", () => {
+    const start = compileFlow(flow(
+      [trigger("t", doorOpened), action("s", { kind: "timer", entity_id: TIMER, action: "start", duration: { minutes: 2 } })],
+      [edge("t", "s")],
+    ));
+    expect(start.config.actions).toEqual([{ action: "timer.start", target: { entity_id: TIMER }, data: { duration: { minutes: 2 } } }]);
+
+    const finished = compileFlow(flow(
+      [trigger("f", { kind: "timer_finished", entity_id: TIMER }), lightOn], [edge("f", "light")],
+    ));
+    expect(finished.config.triggers).toEqual([
+      { trigger: "event", event_type: "timer.finished", event_data: { entity_id: TIMER }, id: "f" },
+    ]);
+  });
+
+  it("cancels without a duration and checks whether a timer runs", () => {
+    const result = compileFlow(flow(
+      [
+        trigger("t", doorOpened),
+        condition("c", { kind: "timer", entity_id: TIMER, check: "not_running" }),
+        action("x", { kind: "timer", entity_id: TIMER, action: "cancel", duration: { minutes: 5 } }),
+      ],
+      [edge("t", "c"), edge("c", "x", "yes")],
+    ));
+    expect(result.config.actions).toEqual([
+      { condition: "not", conditions: [{ condition: "state", entity_id: TIMER, state: "active" }] },
+      { action: "timer.cancel", target: { entity_id: TIMER } },
+    ]);
+  });
+
+  it("requires a timer", () => {
+    const result = compileFlow(flow([trigger("f", { kind: "timer_finished" }), lightOn], [edge("f", "light")]));
+    expect(result.errors.map(e => e.message)).toEqual(["Kies een timer."]);
+  });
+});
+
+describe("repeat card", () => {
+  const blink = action("blink", { kind: "service", service: "light.toggle", target: { entity_id: "light.hal" } });
+  const pause = action("pause", { kind: "delay", seconds: 1 });
+  const repeatFlow = (data: Record<string, unknown>, extra: FlowNode[] = [], edges: FlowEdge[] = []) => compileFlow(flow(
+    [trigger("t", doorOpened), action("r", { kind: "repeat", ...data } as any), blink, pause, ...extra],
+    [edge("t", "r"), edge("r", "blink", "loop"), edge("blink", "pause"), ...edges],
+  ));
+  const body = [{ action: "light.toggle", target: { entity_id: "light.hal" } }, { delay: { seconds: 1 } }];
+
+  it("repeats a fixed number of times, then continues via 'klaar'", () => {
+    const result = repeatFlow({ mode: "count", count: "3" }, [lightOn], [edge("r", "light", "done")]);
+    expect(result.errors).toEqual([]);
+    expect(result.config.actions).toEqual([
+      { repeat: { count: 3, sequence: body } },
+      { action: "light.turn_on", target: { entity_id: "light.hal" } },
+    ]);
+  });
+
+  it("repeats while/until a condition, with a safety maximum", () => {
+    const doorOpen = { kind: "state" as const, entity_id: "binary_sensor.deur", state: "on" };
+    expect(repeatFlow({ mode: "while", condition: doorOpen, max: 5 }).config.actions).toEqual([{
+      repeat: {
+        while: [{ condition: "state", entity_id: "binary_sensor.deur", state: "on" }, { condition: "template", value_template: "{{ repeat.index <= 5 }}" }],
+        sequence: body,
+      },
+    }]);
+    expect(repeatFlow({ mode: "until", condition: doorOpen }).config.actions).toEqual([{
+      repeat: {
+        until: [{ condition: "or", conditions: [
+          { condition: "state", entity_id: "binary_sensor.deur", state: "on" },
+          { condition: "template", value_template: "{{ repeat.index >= 10 }}" },
+        ] }],
+        sequence: body,
+      },
+    }]);
+  });
+
+  it("reports an empty loop, a bad count and a missing condition", () => {
+    const empty = compileFlow(flow([trigger("t", doorOpened), action("r", { kind: "repeat", count: 2 } as any)], [edge("t", "r")]));
+    expect(empty.errors.map(e => e.message)).toContain("Verbind de uitgang 'herhaal' met de kaarten die herhaald moeten worden.");
+    expect(repeatFlow({ count: 0 }).errors.map(e => e.message)).toEqual(["Vul een aantal keer in (1–1000)."]);
+    expect(repeatFlow({ mode: "until" }).errors.map(e => e.message)).toEqual(["Kies de voorwaarde voor de herhaling."]);
+  });
+});
+
 describe("hashConfig", () => {
   it("ignores key order", () => {
     expect(hashConfig({ a: 1, b: [{ c: 2, d: 3 }] })).toBe(hashConfig({ b: [{ d: 3, c: 2 }], a: 1 }));

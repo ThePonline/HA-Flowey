@@ -1,7 +1,7 @@
 /** Right-hand panel that edits the selected card. */
 import { useEffect, useMemo, useState } from "react";
 import { parse, stringify } from "yaml";
-import { callWebhookNow, entityName, entityOptions, errorMessage, serviceName, type Hass } from "../api/ha";
+import { callWebhookNow, createTimer, entityName, entityOptions, errorMessage, serviceName, type Hass } from "../api/ha";
 import { WEBHOOK_ACTION, webhookRequest } from "../compiler/compile";
 import type { CompileIssue, FlowNode, HttpMethod, LightAction, WebhookData, WebhookMethod } from "../compiler/types";
 import { useHass } from "../context";
@@ -152,6 +152,24 @@ function KindForm({ type, data, set }: { type: FlowNode["type"]; data: Data; set
     case "trigger:presence":
     case "condition:presence":
       return <PresenceForm type={type} data={data} set={set} />;
+    case "trigger:timer_finished":
+      return <TimerPicker value={data.entity_id} onChange={entity_id => set({ entity_id })} />;
+    case "condition:timer":
+      return (
+        <>
+          <TimerPicker value={data.entity_id} onChange={entity_id => set({ entity_id })} />
+          <Field label="Voorwaarde">
+            <select className="input" value={data.check ?? "running"} onChange={event => set({ check: event.target.value })}>
+              <option value="running">{t("De timer loopt")}</option>
+              <option value="not_running">{t("De timer loopt niet")}</option>
+            </select>
+          </Field>
+        </>
+      );
+    case "action:timer":
+      return <TimerActionForm data={data} set={set} />;
+    case "action:repeat":
+      return <RepeatForm data={data} set={set} />;
     case "trigger:webhook":
       return <WebhookTriggerForm data={data} set={set} />;
     case "action:wait":
@@ -773,6 +791,141 @@ function WaitForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
       </Field>
       <p className="muted">
         {t("Voorbeeld: ALS beweging → Lamp aan → Wacht tot \"geen beweging, 2 min lang\" → Lamp uit. Met \"Opnieuw starten als hij al loopt\" begint het wachten opnieuw bij nieuwe beweging.")}
+      </p>
+    </>
+  );
+}
+
+const pad = (value: unknown) => String(Number(value) || 0).padStart(2, "0");
+const hhmmss = (value: { hours?: unknown; minutes?: unknown; seconds?: unknown }) =>
+  `${pad(value.hours)}:${pad(value.minutes)}:${pad(value.seconds)}`;
+
+/** Timer choice with inline creation of a new timer helper. */
+function TimerPicker({ value, onChange }: { value?: string; onChange: (entityId: string) => void }) {
+  const hass = useHass();
+  const t = useT();
+  const timers = useEntityOptions(["timer"]);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [length, setLength] = useState<Data>({ minutes: 5 });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const create = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      onChange(await createTimer(hass, name.trim(), hhmmss(length)));
+      setCreating(false);
+      setName("");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Field label="Timer">
+        <SearchSelect value={value} options={timers} placeholder="Kies een timer…" onChange={onChange} />
+      </Field>
+      {!creating ? (
+        <div className="rename-row">
+          <button type="button" className="link-btn" onClick={() => setCreating(true)}>＋ {t("Nieuwe timer")}</button>
+        </div>
+      ) : (
+        <div className="field rename-box">
+          <Field label="Naam van de timer">
+            <input className="input" value={name} autoFocus placeholder={t("bijv. Nalooptijd bijkeuken")} onChange={event => setName(event.target.value)} />
+          </Field>
+          <Field label="Standaardduur">
+            <DurationInput value={length} onChange={setLength} />
+          </Field>
+          <span className="field-hint">{t("De timer wordt als helper in Home Assistant aangemaakt en loopt door na een herstart.")}</span>
+          {error && <span className="issue">{error}</span>}
+          <div className="rename-actions">
+            <button type="button" className="btn small-btn" disabled={busy || !name.trim()} onClick={() => void create()}>{t("Aanmaken")}</button>
+            <button type="button" className="btn secondary small-btn" disabled={busy} onClick={() => setCreating(false)}>{t("Annuleren")}</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+const TIMER_ACTIONS = { start: "Starten (of opnieuw starten)", cancel: "Stoppen", pause: "Pauzeren", finish: "Direct laten aflopen" };
+
+function TimerActionForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
+  const hass = useHass();
+  const t = useT();
+  const action = data.action ?? "start";
+  const standard = data.entity_id ? hass.states[data.entity_id]?.attributes.duration : undefined;
+  return (
+    <>
+      <TimerPicker value={data.entity_id} onChange={entity_id => set({ entity_id })} />
+      <Field label="Wat moet er gebeuren?">
+        <select className="input" value={action} onChange={event => set({ action: event.target.value })}>
+          {Object.entries(TIMER_ACTIONS).map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}
+        </select>
+      </Field>
+      {action === "start" && (
+        <Field label="Duur (optioneel)" hint={standard ? t("Leeg = standaardduur van de timer ({duration}).", { duration: standard }) : undefined}>
+          <DurationInput value={data.duration} onChange={duration => set({ duration })} />
+        </Field>
+      )}
+      <p className="muted">
+        {t("Tip: ALS beweging → Lamp aan + Timer starten; ALS timer afgelopen → Lamp uit. Opnieuw starten terwijl de timer loopt, begint het aftellen opnieuw.")}
+      </p>
+    </>
+  );
+}
+
+/** Condition kinds a repeat card can use for while/until. */
+const REPEAT_CONDITION_KINDS = ["device", "state", "numeric_state", "time", "sun", "weather", "presence", "timer"];
+
+function RepeatForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
+  const t = useT();
+  const mode = data.mode ?? "count";
+  const inner: Data = data.condition ?? { kind: "state" };
+  const setInner = (next: Data) => set({ condition: next });
+  return (
+    <>
+      <Field label="Hoe vaak?">
+        <select className="input" value={mode} onChange={event => set({ mode: event.target.value })}>
+          <option value="count">{t("Een vast aantal keer")}</option>
+          <option value="while">{t("Zolang iets geldt")}</option>
+          <option value="until">{t("Totdat iets geldt")}</option>
+        </select>
+      </Field>
+      {mode === "count" ? (
+        <Field label="Aantal keer">
+          <input className="input" type="number" min={1} max={1000} value={data.count ?? ""} onChange={event => set({ count: event.target.value })} />
+        </Field>
+      ) : (
+        <>
+          <Field label={mode === "while" ? "Zolang…" : "Totdat…"}>
+            <select className="input" value={inner.kind} onChange={event => {
+              const item = catalogItem("condition", event.target.value);
+              setInner({ kind: event.target.value, ...(item ? catalogDefaults(item) : {}) });
+            }}>
+              {REPEAT_CONDITION_KINDS.map(kind => <option key={kind} value={kind}>{t(catalogItem("condition", kind)?.title ?? kind)}</option>)}
+            </select>
+          </Field>
+          <div className="nested">
+            {inner.kind === "device" ? (
+              <DeviceCardForm cardType="condition" data={inner as any} onChange={next => setInner({ ...next })} />
+            ) : (
+              <KindForm type="condition" data={inner} set={patch => setInner({ ...inner, ...patch })} />
+            )}
+          </div>
+          <Field label="Maximaal aantal keer" hint="Vangnet, zodat de lus nooit eindeloos doorgaat.">
+            <input className="input" type="number" min={1} max={1000} value={data.max ?? 10} onChange={event => set({ max: event.target.value })} />
+          </Field>
+        </>
+      )}
+      <p className="muted">
+        {t("Verbind de kaarten die herhaald moeten worden met de uitgang 'herhaal'. Daarna gaat de flow verder via 'klaar'. Zet een Wachten-kaart in de lus om tempo te bepalen.")}
       </p>
     </>
   );

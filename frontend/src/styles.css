@@ -166,6 +166,8 @@ ha-flow-builder-panel { display: block; height: 100%; }
 .flowey .handle-yes { background: var(--fl-yes); }
 .flowey .handle-no { background: var(--fl-no); }
 .flowey .handle-timeout { background: var(--fl-action); }
+.flowey .handle-loop { background: var(--fl-condition); }
+.flowey .handle-loop .handle-label { color: var(--fl-condition); }
 .flowey .handle-timeout .handle-label { color: var(--fl-action); white-space: nowrap; }
 .flowey .handle-label {
   position: absolute; left: 16px; top: -8px; font-size: 10px; font-weight: 700; pointer-events: none;
@@ -176,6 +178,7 @@ ha-flow-builder-panel { display: block; height: 100%; }
 .flowey .react-flow__edge.edge-yes .react-flow__edge-path { stroke: var(--fl-yes); }
 .flowey .react-flow__edge.edge-no .react-flow__edge-path { stroke: var(--fl-no); }
 .flowey .react-flow__edge.edge-done .react-flow__edge-path { stroke: var(--fl-yes); }
+.flowey .react-flow__edge.edge-loop .react-flow__edge-path { stroke: var(--fl-condition); stroke-dasharray: 2 5; stroke-linecap: round; }
 .flowey .react-flow__edge.edge-timeout .react-flow__edge-path { stroke: var(--fl-action); stroke-dasharray: 6 4; }
 .flowey .react-flow__edge.selected .react-flow__edge-path { stroke: var(--fl-primary); stroke-width: 3.5; }
 .flowey .edge-delete {

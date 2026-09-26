@@ -360,6 +360,23 @@ export const serviceName = (hass: Hass, domain: string, service: string) =>
   hass.services?.[domain]?.[service]?.name ||
   service.replaceAll("_", " ");
 
+/**
+ * Creates a timer helper, like Settings → Helpers → Timer does. "restore" keeps it running
+ * across HA restarts (and fires timer.finished if it expired meanwhile). Returns its entity_id.
+ */
+export async function createTimer(hass: Hass, name: string, duration: string): Promise<string> {
+  const created = await hass.callWS<{ id: string }>({
+    type: "timer/create", name, duration, restore: true, icon: "mdi:timer-outline",
+  });
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const entries = await hass.callWS<{ entity_id: string; platform: string; unique_id: string }[]>({ type: "config/entity_registry/list" });
+    const entry = entries.find(item => item.platform === "timer" && item.unique_id === created.id);
+    if (entry) return entry.entity_id;
+    await new Promise(resolve => setTimeout(resolve, 150));
+  }
+  return `timer.${created.id}`;
+}
+
 export const entityName = (hass: Hass, entityId: string | undefined) =>
   entityId ? hass.states[entityId]?.attributes.friendly_name ?? entityId : "";
 
