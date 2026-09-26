@@ -1,7 +1,7 @@
 /** The card palette and the texts shown on canvas nodes. Titles and hints are Dutch keys for t(). */
 import { deviceName, entityName, serviceName, type Hass } from "../api/ha";
 import type { FlowNode, NodeType, Weekday } from "../compiler/types";
-import { createId } from "../canvas/graph";
+import { newWebhookId } from "../canvas/graph";
 import type { Translate } from "../i18n";
 
 export interface CatalogItem {
@@ -15,8 +15,6 @@ export interface CatalogItem {
   defaults: Record<string, unknown> | (() => Record<string, unknown>);
 }
 
-/** Random, hard-to-guess webhook id: it works like a password. */
-export const newWebhookId = () => `flowey_${createId().slice(0, 24)}`;
 
 export const catalogDefaults = (item: CatalogItem) =>
   typeof item.defaults === "function" ? item.defaults() : { ...item.defaults };

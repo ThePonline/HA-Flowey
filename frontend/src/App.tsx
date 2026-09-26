@@ -5,20 +5,24 @@ import {
   findAutomationEntity,
   getAutomationConfig,
   getSettings,
+  latestRuns,
   listFlows,
+  navigate,
   loadServiceNames,
   saveFlow,
   saveSettings,
   setAutomationEnabled,
   triggerAutomation,
+  type TraceSummary,
 } from "./api/ha";
 import { automationId } from "./compiler/compile";
 import type { AutomationConfig, FlowNode, FlowRecord } from "./compiler/types";
 import { Editor } from "./canvas/Editor";
-import { newFlow } from "./canvas/graph";
+import { duplicateFlow, newFlow } from "./canvas/graph";
 import { toast, useHass } from "./context";
-import { flowStatus, removeFlow, STATUS_LABELS } from "./flowActions";
-import { LangContext, makeT, resolveLang, useLang, useT, type LangSetting, type LangState } from "./i18n";
+import { flowStatus, publishFlow, removeFlow, STATUS_LABELS } from "./flowActions";
+import { LangContext, makeT, resolveLang, timeAgo, useLang, useT, type LangSetting, type LangState } from "./i18n";
+import { compileFlow } from "./compiler/compile";
 import { catalogItem, describeNodeLine } from "./nodes/catalog";
 import { useCardLabel } from "./nodes/useCardLabel";
 
@@ -58,12 +62,25 @@ export function App({ narrow }: { narrow: boolean }) {
 
 function FlowsPage({ narrow }: { narrow: boolean }) {
   const hass = useHass();
-  const { t, setting, setSetting } = useLang();
+  // hass is replaced on every state change; async work must look at the newest one.
+  const hassRef = useRef(hass);
+  hassRef.current = hass;
+  const { t, lang, setting, setSetting } = useLang();
   const root = useRef<HTMLDivElement>(null);
   const [flows, setFlows] = useState<FlowRecord[] | null>(null);
   const [remote, setRemote] = useState<Record<string, AutomationConfig | null>>({});
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<FlowRecord | null>(null);
+  const [runs, setRuns] = useState<Record<string, TraceSummary>>({});
+
+  // Last run per flow; refreshed regularly while the overview is open.
+  useEffect(() => {
+    if (editing) return;
+    const refresh = () => latestRuns(hass).then(setRuns).catch(() => undefined);
+    refresh();
+    const timer = setInterval(refresh, 30_000);
+    return () => clearInterval(timer);
+  }, [editing]);
 
   const load = useCallback(async () => {
     try {
@@ -120,6 +137,19 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
       toast(root.current, t("\"{name}\" gestart", { name: flow.name }));
     } catch (err) {
       toast(root.current, t("Testen mislukt: {error}", { error: errorMessage(err) }));
+    }
+  };
+
+  /** Copies a flow (switched off, so it does not run twice) and opens it. */
+  const copy = async (flow: FlowRecord) => {
+    try {
+      let copied = await saveFlow(hass, duplicateFlow(flow, t("{name} (kopie)", { name: flow.name })));
+      if (!compileFlow(copied).errors.length) copied = await publishFlow(() => hassRef.current, copied);
+      setFlows(current => [...(current ?? []), copied]);
+      toast(root.current, t("Kopie gemaakt; hij staat uit tot je hem aanzet."));
+      setEditing(copied);
+    } catch (err) {
+      toast(root.current, t("Dupliceren mislukt: {error}", { error: errorMessage(err) }));
     }
   };
 
@@ -181,7 +211,11 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
                 {triggers.length === 0 && <li className="muted">{t("Nog geen trigger")}</li>}
                 {triggers.length > 3 && <li className="muted">{t("+ {count} meer", { count: triggers.length - 3 })}</li>}
               </ul>
-              <div className="muted small">{t("{count} kaarten", { count: flow.graph.nodes.length })}</div>
+              <div className="muted small">
+                {t("{count} kaarten", { count: flow.graph.nodes.length })}
+                {" · "}
+                <LastRun run={runs[automationId(flow.id)]} lang={lang} />
+              </div>
               <div className="flow-tile-actions" onClick={event => event.stopPropagation()}>
                 <label className="switch">
                   <input type="checkbox" checked={flow.enabled} onChange={() => toggle(flow)} />
@@ -189,6 +223,11 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
                 </label>
                 <button type="button" className="btn secondary" onClick={() => run(flow)}
                   disabled={status === "draft" || status === "missing"}>▶ {t("Test")}</button>
+                {flow.config_hash !== null && (
+                  <button type="button" className="icon-btn" title={t("Traces")}
+                    onClick={() => navigate(`/config/automation/trace/${automationId(flow.id)}`)}>🔍</button>
+                )}
+                <button type="button" className="icon-btn" title={t("Dupliceren")} onClick={() => void copy(flow)}>⧉</button>
                 <button type="button" className="icon-btn danger" title={t("Verwijderen")} onClick={() => remove(flow)}>🗑</button>
               </div>
             </article>
@@ -196,6 +235,28 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
         })}
       </div>
     </div>
+  );
+}
+
+/** HA trace outcomes (script_execution) in plain words. */
+const RUN_RESULTS: Record<string, [string, string]> = {
+  finished: ["✓", "gelukt"],
+  failed_conditions: ["–", "voorwaarden niet voldaan"],
+  error: ["⚠", "fout"],
+  cancelled: ["↻", "onderbroken (opnieuw gestart)"],
+  aborted: ["⚠", "afgebroken"],
+  failed_single: ["–", "overgeslagen (liep al)"],
+  failed_max_runs: ["–", "overgeslagen (te vaak tegelijk)"],
+};
+
+function LastRun({ run, lang }: { run?: TraceSummary; lang: "nl" | "en" }) {
+  const t = useT();
+  if (!run) return <span>{t("nog niet gestart")}</span>;
+  const [icon, text] = run.state === "running" ? ["▶", "loopt nu"] : RUN_RESULTS[run.script_execution ?? ""] ?? ["", run.script_execution ?? ""];
+  return (
+    <span className={run.script_execution === "error" || run.script_execution === "aborted" ? "run-error" : ""} title={run.error}>
+      {t("laatst {when}", { when: timeAgo(run.timestamp.start, lang) })}: {icon} {t(text)}
+    </span>
   );
 }
 

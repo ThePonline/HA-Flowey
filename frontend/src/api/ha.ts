@@ -115,6 +115,33 @@ export const findAutomationEntity = (hass: Hass, automationId: string): HassEnti
     state => state.entity_id.startsWith("automation.") && state.attributes.id === automationId,
   );
 
+/** Summary of an automation run, as listed by trace/list. */
+export interface TraceSummary {
+  item_id: string;
+  run_id: string;
+  state: string;
+  script_execution: string | null;
+  error?: string;
+  timestamp: { start: string; finish: string | null };
+}
+
+/** Latest run per automation id (HA keeps the last runs of every automation). */
+export async function latestRuns(hass: Hass): Promise<Record<string, TraceSummary>> {
+  const traces = await hass.callWS<TraceSummary[]>({ type: "trace/list", domain: "automation" });
+  const latest: Record<string, TraceSummary> = {};
+  for (const trace of traces) {
+    const known = latest[trace.item_id];
+    if (!known || trace.timestamp.start > known.timestamp.start) latest[trace.item_id] = trace;
+  }
+  return latest;
+}
+
+/** Opens a page of the HA frontend (e.g. the trace viewer) without reloading. */
+export function navigate(path: string): void {
+  history.pushState(null, "", path);
+  window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
+}
+
 export const setAutomationEnabled = (hass: Hass, entityId: string, enabled: boolean) =>
   hass.callService("automation", enabled ? "turn_on" : "turn_off", { entity_id: entityId });
 

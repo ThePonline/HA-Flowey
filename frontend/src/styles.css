@@ -73,6 +73,20 @@ ha-flow-builder-panel { display: block; height: 100%; }
 .flowey .copy-row { display: flex; gap: 6px; align-items: center; }
 .flowey .copy-row .input { flex: 1; min-width: 0; }
 .flowey .nested { border-left: 3px solid var(--fl-divider); padding-left: 10px; margin-bottom: 16px; }
+.flowey .menu-anchor { position: relative; }
+.flowey .menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 260px; max-width: 360px; padding: 6px;
+  background: var(--fl-card); color: var(--fl-text); border: 1px solid var(--fl-divider); border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.flowey .menu-title { font-size: 12px; color: var(--fl-muted); padding: 6px 8px; }
+.flowey .menu-item {
+  display: block; width: 100%; text-align: left; padding: 8px; border: 0; border-radius: 8px;
+  background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.flowey .menu-item:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.06)); }
+.flowey .inspector-foot .danger-outline { flex: 1.4; }
+.flowey .run-error { color: var(--fl-error); }
 .flowey .success { color: var(--success-color, #43a047); font-size: 13px; margin: 4px 0; word-break: break-word; }
 .flowey .header-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
 .flowey .small-btn { align-self: flex-start; padding: 6px 12px; font-size: 13px; }

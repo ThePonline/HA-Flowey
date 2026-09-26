@@ -6,7 +6,8 @@ import { WEBHOOK_ACTION, webhookRequest } from "../compiler/compile";
 import type { CompileIssue, FlowNode, HttpMethod, LightAction, WebhookData, WebhookMethod } from "../compiler/types";
 import { useHass } from "../context";
 import { useT, type Translate } from "../i18n";
-import { catalogDefaults, catalogItem, newWebhookId, WEATHER_CONDITIONS, WEATHER_MEASURES } from "../nodes/catalog";
+import { newWebhookId } from "../canvas/graph";
+import { catalogDefaults, catalogItem, WEATHER_CONDITIONS, WEATHER_MEASURES } from "../nodes/catalog";
 import { DeviceCardForm } from "./DeviceCardForm";
 import { DurationInput, Field, OffsetInput, SearchSelect, WeekdayPicker, type SearchOption } from "./fields";
 
@@ -17,6 +18,7 @@ export function Inspector({
   issues,
   onChange,
   onDelete,
+  onDuplicate,
   onClose,
   onAddNext,
 }: {
@@ -24,6 +26,7 @@ export function Inspector({
   issues: CompileIssue[];
   onChange: (data: Data) => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onClose: () => void;
   /** Narrow screens: open the palette to add a card connected to this one. */
   onAddNext?: () => void;
@@ -53,6 +56,9 @@ export function Inspector({
       </div>
       <footer className="inspector-foot">
         {onAddNext && <button type="button" className="btn" onClick={onAddNext}>＋ {t("Volgende kaart")}</button>}
+        <button type="button" className="btn secondary" onClick={onDuplicate} title={t("Ctrl+D; kopiëren/plakken kan ook met Ctrl+C / Ctrl+V")}>
+          ⧉ {t("Dupliceren")}
+        </button>
         <button type="button" className="btn danger-outline" onClick={onDelete}>{t("Kaart verwijderen")}</button>
       </footer>
     </aside>

@@ -35,4 +35,16 @@ export const LangContext = createContext<LangState>({
 });
 
 export const useLang = () => useContext(LangContext);
+
+/** "5 minuten geleden" / "5 minutes ago". */
+export function timeAgo(date: string | Date, lang: Lang): string {
+  const seconds = Math.round((new Date(date).getTime() - Date.now()) / 1000);
+  const format = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [["day", 86400], ["hour", 3600], ["minute", 60]];
+  for (const [unit, size] of units) {
+    if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+  }
+  return format.format(seconds, "second");
+}
+
 export const useT = () => useContext(LangContext).t;

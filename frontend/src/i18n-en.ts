@@ -485,6 +485,27 @@ export const EN: Record<string, string> = {
   "Kies de voorwaarde voor de herhaling.": "Choose the condition for the repetition.",
   "Het maximum moet tussen 1 en 1000 liggen.": "The maximum must be between 1 and 1000.",
 
+  // Copy / duplicate / test / last run
+  "Dupliceren": "Duplicate",
+  "Ctrl+D; kopiëren/plakken kan ook met Ctrl+C / Ctrl+V": "Ctrl+D; copy/paste also works with Ctrl+C / Ctrl+V",
+  "{count} kaart(en) gekopieerd": "{count} card(s) copied",
+  "{name} (kopie)": "{name} (copy)",
+  "Kopie gemaakt; hij staat uit tot je hem aanzet.": "Copy created; it stays off until you switch it on.",
+  "Dupliceren mislukt: {error}": "Duplicating failed: {error}",
+  "Kies welke trigger je wilt nabootsen": "Choose which trigger to simulate",
+  "Test alsof deze trigger gebeurde:": "Test as if this trigger happened:",
+  "Flow gestart alsof \"{trigger}\" gebeurde": "Flow started as if \"{trigger}\" happened",
+  "nog niet gestart": "not run yet",
+  "laatst {when}": "last {when}",
+  "gelukt": "succeeded",
+  "voorwaarden niet voldaan": "conditions not met",
+  "fout": "error",
+  "onderbroken (opnieuw gestart)": "interrupted (restarted)",
+  "afgebroken": "aborted",
+  "overgeslagen (liep al)": "skipped (already running)",
+  "overgeslagen (te vaak tegelijk)": "skipped (too many at once)",
+  "loopt nu": "running now",
+
   // Compiler messages
   "Deze flow bevat een lus.": "This flow contains a loop.",
   "Een trigger kan niet midden in een flow staan.": "A trigger cannot be in the middle of a flow.",

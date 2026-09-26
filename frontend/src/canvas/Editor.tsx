@@ -13,17 +13,18 @@ import {
   type Edge,
 } from "@xyflow/react";
 import { stringify } from "yaml";
-import { errorMessage, findAutomationEntity, triggerAutomation } from "../api/ha";
+import { errorMessage, findAutomationEntity, navigate, triggerAutomation } from "../api/ha";
 import { automationId, compileFlow, hashConfig, stableStringify } from "../compiler/compile";
-import type { CompileIssue, FlowMode, FlowNode, FlowRecord } from "../compiler/types";
+import type { CompileIssue, FlowEdge, FlowMode, FlowNode, FlowRecord } from "../compiler/types";
 import { IssuesContext, toast, useHass } from "../context";
 import { applyEnabled, ExternalChange, publishFlow, saveDraft } from "../flowActions";
 import { useT } from "../i18n";
 import { Inspector } from "../inspector/Inspector";
-import { CATALOG, catalogDefaults, type CatalogItem } from "../nodes/catalog";
+import { CATALOG, catalogDefaults, catalogItem, describeNodeLine, type CatalogItem } from "../nodes/catalog";
 import { DeletableEdge, FlowCard } from "./FlowCard";
 import {
   canConnect,
+  copyCards,
   fromCanvas,
   newNodeId,
   styleEdge,
@@ -43,6 +44,9 @@ const MODES: { value: FlowMode; label: string }[] = [
   { value: "queued", label: "In de wachtrij zetten" },
   { value: "parallel", label: "Tegelijk uitvoeren" },
 ];
+
+/** Copied cards; module level so cards can be pasted into another flow too. */
+let clipboard: { nodes: FlowNode[]; edges: FlowEdge[] } | null = null;
 
 /** Wait this long after the last change before saving, so typing does not save on every key. */
 const AUTOSAVE_DELAY_MS = 1000;
@@ -86,6 +90,7 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
   const [showYaml, setShowYaml] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(!narrow);
   const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  const [testMenu, setTestMenu] = useState(false);
 
   const graph = useMemo(() => fromCanvas(nodes, edges), [nodes, edges]);
   const current: FlowRecord = useMemo(() => ({ ...saved, ...meta, graph }), [saved, meta, graph]);
@@ -183,6 +188,58 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
   };
 
   // -------------------------------------------------------------------------
+  // Copy / paste / duplicate
+  // -------------------------------------------------------------------------
+
+  const copySelection = (ids?: string[]) => {
+    const wanted = new Set(ids ?? nodes.filter(node => node.selected).map(node => node.id));
+    if (!wanted.size) return 0;
+    clipboard = {
+      nodes: structuredClone(graph.nodes.filter(node => wanted.has(node.id))),
+      edges: graph.edges.filter(edge => wanted.has(edge.source) && wanted.has(edge.target)),
+    };
+    return wanted.size;
+  };
+
+  const paste = () => {
+    if (!clipboard) return;
+    const copy = copyCards(clipboard.nodes, clipboard.edges, { x: 40, y: 60 });
+    setNodes(current => [
+      ...current.map(node => ({ ...node, selected: false })),
+      ...toCanvasNodes(copy.nodes).map(node => ({ ...node, selected: true })),
+    ]);
+    setEdges(current => [...current, ...toCanvasEdges(copy.edges)]);
+    setSelectedId(copy.nodes.length === 1 ? copy.nodes[0].id : null);
+    // Pasting again places the next copy a bit further.
+    clipboard = copy;
+  };
+
+  const duplicate = (ids?: string[]) => {
+    if (copySelection(ids)) paste();
+  };
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.composedPath()[0] as HTMLElement | undefined;
+      if (target && (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable)) return;
+      if (!(event.ctrlKey || event.metaKey)) return;
+      const key = event.key.toLowerCase();
+      if (key === "c") {
+        const count = copySelection();
+        if (count) toast(root.current, t("{count} kaart(en) gekopieerd", { count }));
+      } else if (key === "v" && clipboard) {
+        event.preventDefault();
+        paste();
+      } else if (key === "d") {
+        event.preventDefault();
+        duplicate();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  // -------------------------------------------------------------------------
   // Autosave
   // -------------------------------------------------------------------------
 
@@ -260,7 +317,23 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
   // Test / navigation
   // -------------------------------------------------------------------------
 
+  // With several triggers that each have their own path, a plain test run matches none of them.
+  const triggerNodes = graph.nodes.filter(node => node.type === "trigger");
+  const needsTriggerChoice = result.config.actions.some(step => "choose" in step);
+
+  /** Runs the flow's actions as if the given trigger fired (automation.trigger cannot set a trigger id). */
+  const testAs = async (node: FlowNode) => {
+    setTestMenu(false);
+    await flush();
+    const actions = compileFlow(latest.current.current).config.actions;
+    hassRef.current
+      .callWS({ type: "execute_script", sequence: actions, variables: { trigger: { id: node.id, platform: "flowey_test" } } })
+      .catch(error => toast(root.current, t("Testen mislukt: {error}", { error: errorMessage(error) })));
+    toast(root.current, t("Flow gestart alsof \"{trigger}\" gebeurde", { trigger: describeNodeLine(hass, node, t) }));
+  };
+
   const test = async () => {
+    if (needsTriggerChoice) return setTestMenu(!testMenu);
     await flush();
     const automation = findAutomationEntity(hassRef.current, automationId(saved.id));
     if (!automation) return toast(root.current, t("Deze flow is nog niet actief. Maak hem eerst compleet."));
@@ -272,10 +345,7 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
     }
   };
 
-  const openTraces = () => {
-    history.pushState(null, "", `/config/automation/trace/${automationId(saved.id)}`);
-    window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
-  };
+  const openTraces = () => navigate(`/config/automation/trace/${automationId(saved.id)}`);
 
   const back = async () => {
     await flush();
@@ -316,8 +386,22 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
           </select>
           <button type="button" className="btn secondary" onClick={() => setShowYaml(true)}>YAML</button>
           {entity && <button type="button" className="btn secondary" onClick={openTraces}>{t("Traces")}</button>}
-          <button type="button" className="btn secondary" onClick={test} disabled={!entity && !dirty}
-            title={t("Voert de acties direct uit (triggers worden overgeslagen)")}>▶ {t("Test")}</button>
+          <span className="menu-anchor">
+            <button type="button" className="btn secondary" onClick={test} disabled={!entity && !dirty}
+              title={needsTriggerChoice ? t("Kies welke trigger je wilt nabootsen") : t("Voert de acties direct uit (triggers worden overgeslagen)")}>
+              ▶ {t("Test")}{needsTriggerChoice ? " ▾" : ""}
+            </button>
+            {testMenu && (
+              <div className="menu">
+                <div className="menu-title">{t("Test alsof deze trigger gebeurde:")}</div>
+                {triggerNodes.map(node => (
+                  <button type="button" key={node.id} className="menu-item" onClick={() => void testAs(node)}>
+                    {catalogItem(node.type, node.data.kind)?.icon} {describeNodeLine(hass, node, t)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </span>
         </header>
 
         {saveState.kind === "conflict" && (
@@ -381,6 +465,7 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
               issues={issuesByNode.get(selectedNode.id) ?? []}
               onChange={data => updateNodeData(selectedNode.id, data)}
               onDelete={() => deleteNode(selectedNode.id)}
+              onDuplicate={() => duplicate([selectedNode.id])}
               onAddNext={narrow ? () => setPaletteOpen(true) : undefined}
               onClose={() => {
                 setSelectedId(null);

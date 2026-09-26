@@ -30,7 +30,8 @@ Je configuratie moet `automation: !include automations.yaml` bevatten. Dat staat
 | Zon (op/onder ± verschuiving) | Zon (na/voor ± verschuiving) | |
 | Weer (wordt regen/zonnig/…, temperatuur/wind/vochtigheid boven/onder) | Weer | |
 | Aanwezigheid (iemand komt/vertrekt, eerste komt/laatste vertrekt, per zone) | Aanwezigheid (iemand/niemand, personen wel/niet in zone) | Wacht tot… (met maximum; uitgangen *gebeurd* / *tijd verstreken*) |
-| Webhook ontvangen (bijv. vanuit Homey) | | |
+| Webhook ontvangen (bijv. vanuit Homey) | Timer loopt | Timer (starten, stoppen, pauzeren) |
+| Timer afgelopen | | Herhaal (x keer, zolang/totdat; uitgangen *herhaal* / *klaar*) |
 
 Regels op het canvas:
 - Meerdere lijnen uit één uitgang lopen **parallel**.
@@ -55,6 +56,26 @@ Via **gebeurd** gaat de flow verder als het gebeurde, via **tijd verstreken** al
 Voorbeeld licht op beweging in één flow: **ALS** beweging → 💡 aan → **Wacht tot** *geen beweging, 2 min lang* → 💡 uit.
 Met de flow-instelling *Opnieuw starten als hij al loopt* begint het wachten opnieuw bij nieuwe beweging.
 Let op: een lopende wachttijd overleeft geen herstart van Home Assistant.
+
+## Timers (overleven een herstart)
+
+Een **timer** is een HA-helper die aftelt, zoals Homey's Countdown. Maak hem direct in de kaart aan met *＋ Nieuwe timer*.
+Robuuste variant van licht op beweging, met twee triggers:
+
+- **ALS** beweging → 💡 aan + ⏲️ Timer *Nalooptijd* starten (opnieuw starten begint het aftellen opnieuw)
+- **ALS** ⏲️ *Nalooptijd* afgelopen → 💡 uit
+
+Anders dan *Wacht tot…* loopt een timer door als Home Assistant herstart; was hij intussen afgelopen, dan start de flow direct na de herstart.
+
+## Herhaal
+
+De kaart **Herhaal** herhaalt de kaarten aan de uitgang *herhaal* een vast aantal keer, of zolang/totdat een voorwaarde geldt (met een maximum als vangnet). Daarna gaat de flow verder via *klaar*.
+
+## Handig
+
+- **Test** vraagt bij een flow met meerdere triggers welke trigger je wilt nabootsen, en voert de flow uit alsof die gebeurde.
+- **Kopiëren/plakken**: selecteer kaarten en gebruik Ctrl+C / Ctrl+V (ook naar een andere flow), of Ctrl+D / ⧉ *Dupliceren*. Een gekopieerde webhook-trigger krijgt automatisch een nieuw geheim adres.
+- **Overzicht**: per flow zie je wanneer hij het laatst liep en of dat lukte; 🔍 opent de traces, ⧉ dupliceert de flow (de kopie staat uit tot je hem aanzet).
 
 ## Homey → Home Assistant (webhook ontvangen)
 

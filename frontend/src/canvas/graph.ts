@@ -12,6 +12,49 @@ export function createId(): string {
 
 export const newNodeId = () => `n${createId().slice(0, 10)}`;
 
+/** Random, hard-to-guess webhook id: it works like a password. */
+export const newWebhookId = () => `flowey_${createId().slice(0, 24)}`;
+
+/**
+ * Card data for a copy. A webhook address must be unique per automation (and is secret),
+ * so copied "webhook received" triggers get a new id, also when nested in a "wait until" card.
+ */
+export function copyNodeData(type: FlowNode["type"], data: Record<string, any>): Record<string, any> {
+  const copy = structuredClone(data);
+  if (type === "trigger" && copy.kind === "webhook") copy.webhook_id = newWebhookId();
+  if (copy.kind === "wait" && copy.trigger?.kind === "webhook") copy.trigger.webhook_id = newWebhookId();
+  return copy;
+}
+
+/** Copies cards and the connections between them, with new ids and an offset. */
+export function copyCards(nodes: FlowNode[], edges: FlowEdge[], offset: { x: number; y: number }) {
+  const ids = new Map(nodes.map(node => [node.id, newNodeId()]));
+  return {
+    nodes: nodes.map(node => ({
+      ...node,
+      id: ids.get(node.id)!,
+      position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+      data: copyNodeData(node.type, node.data),
+    })) as FlowNode[],
+    edges: edges
+      .filter(edge => ids.has(edge.source) && ids.has(edge.target))
+      .map(edge => ({ ...edge, id: `e${createId().slice(0, 10)}`, source: ids.get(edge.source)!, target: ids.get(edge.target)! })),
+  };
+}
+
+/** A copy of a whole flow: new id, fresh webhook ids, not yet published and switched off. */
+export function duplicateFlow(flow: FlowRecord, name: string): FlowRecord {
+  return {
+    ...newFlow(name),
+    enabled: false,
+    mode: flow.mode,
+    graph: {
+      nodes: flow.graph.nodes.map(node => ({ ...node, data: copyNodeData(node.type, node.data) })) as FlowNode[],
+      edges: flow.graph.edges.map(edge => ({ ...edge })),
+    },
+  };
+}
+
 export function newFlow(name = "Nieuwe flow"): FlowRecord {
   return {
     id: createId(),
