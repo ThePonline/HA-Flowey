@@ -1,13 +1,13 @@
 {
   "domain": "ha_flow_builder",
   "name": "HA Flow Builder",
-  "codeowners": [],
+  "codeowners": ["@ThePonline"],
   "config_flow": true,
   "dependencies": ["http", "frontend", "panel_custom", "websocket_api", "automation", "webhook", "timer"],
-  "documentation": "https://github.com/example/ha-flow-builder",
+  "documentation": "https://github.com/ThePonline/HA-Flowey",
   "integration_type": "service",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/example/ha-flow-builder/issues",
+  "issue_tracker": "https://github.com/ThePonline/HA-Flowey/issues",
   "requirements": [],
   "single_config_entry": true,
   "version": "0.11.0"

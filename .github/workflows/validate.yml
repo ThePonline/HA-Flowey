@@ -1,0 +1,46 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+jobs:
+  hassfest:
+    name: Home Assistant (hassfest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@main
+        with:
+          category: integration
+          # Brand icons live in home-assistant/brands; not needed for a custom repository.
+          ignore: brands
+
+  frontend:
+    name: Frontend (tests + bundle up to date)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      # HACS installs the repository as is, so the committed bundle must match the sources.
+      - name: Bundle is up to date
+        run: git diff --exit-code -- ../custom_components/ha_flow_builder/static/flow_builder.js
