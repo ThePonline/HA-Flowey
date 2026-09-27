@@ -2,12 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "HA Flow Builder",
+        "title": "Flowey",
         "description": "Voegt het paneel Flows toe aan de zijbalk. Flows worden opgeslagen als gewone Home Assistant-automatiseringen."
       }
     },
     "abort": {
-      "single_instance_allowed": "HA Flow Builder is al ingesteld."
+      "single_instance_allowed": "Flowey is al ingesteld."
     }
   },
   "services": {

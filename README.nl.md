@@ -2,7 +2,7 @@
   <img src="custom_components/ha_flow_builder/brand/icon.png" alt="" width="96" height="96">
 </p>
 
-<h1 align="center">HA Flow Builder</h1>
+<h1 align="center">Flowey</h1>
 
 <p align="center">
   Homey-achtige <b>Advanced Flows</b> voor Home Assistant: bouw automatiseringen op een canvas,<br>
@@ -37,14 +37,16 @@ Elke flow wordt opgeslagen als **gewone Home Assistant-automation** in `automati
 **Via HACS (aanbevolen)**
 
 1. Klik op de knop hierboven, of ga naar *HACS → ⋮ → Custom repositories* en voeg `https://github.com/ThePonline/HA-Flowey` toe met type *Integration*.
-2. Installeer **HA Flow Builder** en herstart Home Assistant.
+2. Installeer **Flowey** en herstart Home Assistant.
 3. Voeg de integratie toe: [![Integratie toevoegen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ha_flow_builder)
-   of ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → HA Flow Builder*.
-4. In de zijbalk verschijnt **Flows** (alleen voor beheerders).
+   of ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → Flowey*.
+4. In de zijbalk verschijnt **Flowey** (alleen voor beheerders).
 
 **Handmatig**: download de nieuwste [release](https://github.com/ThePonline/HA-Flowey/releases), kopieer `custom_components/ha_flow_builder` naar `config/custom_components/` en ga verder bij stap 2.
 
 **Vereisten**: Home Assistant 2024.10 of nieuwer, en `automation: !include automations.yaml` in je configuratie (dat staat standaard in elke installatie).
+
+**Bijwerken vanaf HA Flow Builder** (0.12 en ouder): werk gewoon bij in HACS en herstart. Je flows, instellingen en automations blijven behouden; alleen de naam verandert.
 
 ## Schermafbeeldingen
 
@@ -198,7 +200,7 @@ Lees [CONTRIBUTING.md](CONTRIBUTING.md) voordat je een pull request opent. Wat e
 
 ## Licentie
 
-HA Flow Builder heeft een **duale licentie**:
+Flowey heeft een **duale licentie**:
 
 - **Gratis: [GNU AGPL-3.0](LICENSE).** Gebruik het thuis, pas het aan, deel het. Verspreid je een aangepaste versie, of draai je een aangepaste versie als dienst voor anderen, dan moet je je broncode onder dezelfde licentie publiceren.
 - **Commerciële licentie.** Voor gebruik in een commercieel product of een commerciële dienst zonder de AGPL-verplichtingen (bijvoorbeeld in closed-source software, meegeleverd met hardware of als onderdeel van een betaalde installatieservice). Neem contact op met [@ThePonline](https://github.com/ThePonline) voor de voorwaarden.

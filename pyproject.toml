@@ -1,6 +1,6 @@
 [project]
-name = "ha-flow-builder"
-version = "0.12.0"
+name = "flowey"
+version = "0.13.0"
 description = "Homey-style visual flows for Home Assistant, compiled to native automations"
 license = "AGPL-3.0-only"
 requires-python = ">=3.14"

@@ -1,4 +1,4 @@
-"""Websocket commands used by the Flow Builder panel."""
+"""Websocket commands used by the Flowey panel."""
 
 from __future__ import annotations
 

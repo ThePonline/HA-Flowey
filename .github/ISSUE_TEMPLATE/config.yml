@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: Commercial license
     url: https://github.com/ThePonline
-    about: Questions about using HA Flow Builder in a commercial product or service.
+    about: Questions about using Flowey in a commercial product or service.

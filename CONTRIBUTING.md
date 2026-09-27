@@ -1,12 +1,12 @@
 # Contributing
 
-Thanks for helping to improve HA Flow Builder! Bug reports, ideas and pull requests are welcome.
+Thanks for helping to improve Flowey! Bug reports, ideas and pull requests are welcome.
 
 ## Reporting a bug
 
 Open an [issue](https://github.com/ThePonline/HA-Flowey/issues/new/choose) with:
 
-- the HA Flow Builder and Home Assistant versions,
+- the Flowey and Home Assistant versions,
 - what you did, what you expected and what happened,
 - the automation YAML of the flow (*YAML* button in the editor), with secrets such as webhook ids removed,
 - errors from the browser console or the Home Assistant log, if any.
@@ -43,7 +43,7 @@ To try a change in a real Home Assistant, link or copy `custom_components/ha_flo
 
 ## Licensing of contributions
 
-HA Flow Builder is dual-licensed under the AGPL-3.0 and a commercial license (see the [README](README.md#license)). To keep that possible, the project needs to be able to license your contribution under both.
+Flowey is dual-licensed under the AGPL-3.0 and a commercial license (see the [README](README.md#license)). To keep that possible, the project needs to be able to license your contribution under both.
 
 By opening a pull request you confirm that:
 

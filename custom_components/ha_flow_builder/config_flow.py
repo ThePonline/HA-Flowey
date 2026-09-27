@@ -1,11 +1,11 @@
-"""Config flow for HA Flow Builder."""
+"""Config flow for Flowey."""
 
 from __future__ import annotations
 
 from homeassistant import config_entries
 import voluptuous as vol
 
-from .const import DOMAIN
+from .const import DOMAIN, PANEL_TITLE
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -13,6 +13,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         if user_input is not None:
-            return self.async_create_entry(title="HA Flow Builder", data={})
+            return self.async_create_entry(title=PANEL_TITLE, data={})
 
         return self.async_show_form(step_id="user", data_schema=vol.Schema({}))

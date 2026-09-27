@@ -1,1 +1,1 @@
-"""Tests for HA Flow Builder."""
+"""Tests for Flowey."""

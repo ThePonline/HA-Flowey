@@ -20,7 +20,7 @@ import type { AutomationConfig, FlowNode, FlowRecord } from "./compiler/types";
 import { Editor } from "./canvas/Editor";
 import { duplicateFlow, newFlow } from "./canvas/graph";
 import { toast, useHass } from "./context";
-import { flowStatus, publishFlow, removeFlow, runOutcome, STATUS_LABELS } from "./flowActions";
+import { flowStatus, hasOutdatedMarker, publishFlow, removeFlow, runOutcome, STATUS_LABELS } from "./flowActions";
 import { LangContext, makeT, resolveLang, timeAgo, useLang, useT, type LangSetting, type LangState } from "./i18n";
 import { compileFlow } from "./compiler/compile";
 import { catalogItem, describeNodeLine } from "./nodes/catalog";
@@ -90,7 +90,19 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
       const configs = await Promise.all(
         list.map(async flow => [flow.id, flow.config_hash === null ? null : await getAutomationConfig(hass, automationId(flow.id))] as const),
       );
-      setRemote(Object.fromEntries(configs));
+      const remoteById: Record<string, AutomationConfig | null> = Object.fromEntries(configs);
+      setRemote(remoteById);
+
+      const outdated = list.filter(flow => hasOutdatedMarker(flow, remoteById[flow.id]));
+      if (outdated.length) {
+        const republished = await Promise.all(outdated.map(flow => publishFlow(() => hassRef.current, flow)));
+        const byId = new Map(republished.map(flow => [flow.id, flow]));
+        setFlows(current => current && current.map(flow => byId.get(flow.id) ?? flow));
+        setRemote(current => ({
+          ...current,
+          ...Object.fromEntries(republished.map(flow => [flow.id, compileFlow(flow).config])),
+        }));
+      }
     } catch (err) {
       setError(t("Kan flows niet laden: {error}", { error: errorMessage(err) }));
     }
@@ -173,7 +185,7 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
           </button>
         )}
         <div>
-          <h1>⚡ Flows</h1>
+          <h1>⚡ Flowey</h1>
           <div className="muted">{t("Automatiseren zoals op Homey, uitgevoerd door Home Assistant zelf.")}</div>
         </div>
         <select className="input language" value={setting} title={t("Taal")}

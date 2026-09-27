@@ -29,7 +29,7 @@ import type {
 } from "./types";
 
 export const AUTOMATION_ID_PREFIX = "flowey_";
-export const MANAGED_MARKER = "Beheerd door HA Flow Builder — bewerk deze flow visueel in het Flows-paneel.";
+export const MANAGED_MARKER = "Beheerd door Flowey — bewerk deze flow visueel in het Flowey-paneel.";
 
 export const automationId = (flowId: string) => `${AUTOMATION_ID_PREFIX}${flowId}`;
 

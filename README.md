@@ -2,7 +2,7 @@
   <img src="custom_components/ha_flow_builder/brand/icon.png" alt="" width="96" height="96">
 </p>
 
-<h1 align="center">HA Flow Builder</h1>
+<h1 align="center">Flowey</h1>
 
 <p align="center">
   Homey-style <b>Advanced Flows</b> for Home Assistant: build automations on a canvas,<br>
@@ -37,14 +37,16 @@ Every flow is saved as a **regular Home Assistant automation** in `automations.y
 **HACS (recommended)**
 
 1. Click the button above, or go to HACS → ⋮ → *Custom repositories* and add `https://github.com/ThePonline/HA-Flowey` with type *Integration*.
-2. Install **HA Flow Builder** and restart Home Assistant.
+2. Install **Flowey** and restart Home Assistant.
 3. Add the integration: [![Add integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ha_flow_builder)
-   or go to *Settings → Devices & services → Add integration → HA Flow Builder*.
-4. **Flows** appears in the sidebar (admins only).
+   or go to *Settings → Devices & services → Add integration → Flowey*.
+4. **Flowey** appears in the sidebar (admins only).
 
 **Manual**: download the latest [release](https://github.com/ThePonline/HA-Flowey/releases), copy `custom_components/ha_flow_builder` to `config/custom_components/` and continue with step 2.
 
 **Requirements**: Home Assistant 2024.10 or newer, and `automation: !include automations.yaml` in your configuration (every default installation has it).
+
+**Updating from HA Flow Builder** (0.12 and older): just update in HACS and restart. Your flows, settings and automations are kept; only the name changes.
 
 ## Screenshots
 
@@ -130,7 +132,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request, and [CHANG
 
 ## License
 
-HA Flow Builder is **dual-licensed**:
+Flowey is **dual-licensed**:
 
 - **Free: [GNU AGPL-3.0](LICENSE).** Use it at home, change it, share it. If you distribute a modified version, or run a modified version as a service for others, you must publish your source code under the same license.
 - **Commercial license.** For use in a commercial product or service without the AGPL obligations (for example in a closed-source product, or bundled with hardware or a paid installation service). Contact [@ThePonline](https://github.com/ThePonline) for terms.

@@ -1,4 +1,4 @@
-"""HA Flow Builder - Homey-style visual flows compiled to native HA automations."""
+"""Flowey - Homey-style visual flows compiled to native HA automations."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 
 from . import services, websocket_api
-from .const import DOMAIN, PANEL_COMPONENT, PANEL_URL_PATH, STATIC_URL
+from .const import DOMAIN, LEGACY_TITLE, PANEL_COMPONENT, PANEL_TITLE, PANEL_URL_PATH, STATIC_URL
 from .store import FlowRepository
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -27,6 +27,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = hass.data.setdefault(DOMAIN, {})
+
+    if entry.title == LEGACY_TITLE:
+        hass.config_entries.async_update_entry(entry, title=PANEL_TITLE)
 
     if "repository" not in data:
         repository = FlowRepository(hass)
@@ -65,7 +68,7 @@ async def _register_panel(hass: HomeAssistant) -> None:
         hass=hass,
         frontend_url_path=PANEL_URL_PATH,
         webcomponent_name=PANEL_COMPONENT,
-        sidebar_title="Flows",
+        sidebar_title=PANEL_TITLE,
         sidebar_icon="mdi:graph-outline",
         # Cache-bust the bundle whenever it is rebuilt.
         module_url=f"{STATIC_URL}/flow_builder.js?v={manifest_version}",

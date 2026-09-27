@@ -1,9 +1,15 @@
 # Changelog
 
-All notable changes to HA Flow Builder are documented here.
+All notable changes to Flowey (called HA Flow Builder before 0.13.0) are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.13.0] - 2026-09-27
+
+### Changed
+- **HA Flow Builder is now called Flowey.** The sidebar item, the integration, the HACS entry and the panel all use the new name.
+- Nothing to do when updating: the integration id (`ha_flow_builder`), the panel URL, your flows, settings and the `ha_flow_builder.call_webhook` action stay the same. The existing integration entry is renamed automatically, and when you open the panel, flows whose automation only still says "Beheerd door HA Flow Builder" are republished with the new description.
 
 ## [0.12.0] - 2026-09-27
 
@@ -48,7 +54,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - First public version: a canvas editor with device, entity, time, sun, weather and presence triggers and conditions, and light, notify, webhook, service and delay actions.
 - Flows are saved as regular automations in `automations.yaml`, with autosave, Dutch/English texts and detection of external YAML edits.
 
-[Unreleased]: https://github.com/ThePonline/HA-Flowey/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/ThePonline/HA-Flowey/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/ThePonline/HA-Flowey/releases/tag/v0.13.0
 [0.12.0]: https://github.com/ThePonline/HA-Flowey/releases/tag/v0.12.0
 [0.11.0]: https://github.com/ThePonline/HA-Flowey/commit/fd48ac1
 [0.10.0]: https://github.com/ThePonline/HA-Flowey/commit/4bb2d61

@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.setup import async_setup_component
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -18,7 +19,7 @@ async def test_setup_registers_panel_and_action(hass: HomeAssistant, setup_integ
     assert setup_integration.state is ConfigEntryState.LOADED
 
     panel = hass.data[DATA_PANELS][PANEL_URL_PATH]
-    assert panel.sidebar_title == "Flows"
+    assert panel.sidebar_title == "Flowey"
     assert panel.require_admin is True
     assert panel.config["_panel_custom"]["module_url"] == f"{STATIC_URL}/flow_builder.js?v=123"
 
@@ -49,3 +50,15 @@ def test_bundle_version_follows_bundle_file() -> None:
     # The committed bundle exists, so the cache-buster is its modification time.
     assert _bundle_version().isdigit()
     assert _bundle_version() != "0"
+
+
+@pytest.mark.usefixtures("mock_bundle_version")
+async def test_renames_entry_from_before_flowey(hass: HomeAssistant) -> None:
+    assert await async_setup_component(hass, "http", {})
+    entry = MockConfigEntry(domain=DOMAIN, title="HA Flow Builder")
+    entry.add_to_hass(hass)
+
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.title == "Flowey"

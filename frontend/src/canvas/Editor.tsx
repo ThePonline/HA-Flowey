@@ -406,7 +406,7 @@ function EditorInner({ flow: initial, narrow, onBack, onSaved }: Props) {
 
         {saveState.kind === "conflict" && (
           <div className="banner">
-            {t("Deze automation is buiten Flow Builder gewijzigd (in YAML of de HA-editor). Automatisch opslaan staat stil.")}
+            {t("Deze automation is buiten Flowey gewijzigd (in YAML of de HA-editor). Automatisch opslaan staat stil.")}
             {" "}
             <button type="button" className="btn small-btn" onClick={() => void save(true)}>{t("Overschrijven met deze flow")}</button>
           </div>

@@ -1,4 +1,4 @@
-"""Shared fixtures for HA Flow Builder tests."""
+"""Shared fixtures for Flowey tests."""
 
 from __future__ import annotations
 
@@ -20,9 +20,9 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> Generat
 
 @pytest.fixture
 async def setup_integration(hass: HomeAssistant) -> MockConfigEntry:
-    """Set up HA Flow Builder with a config entry, like after adding it in the UI."""
+    """Set up Flowey with a config entry, like after adding it in the UI."""
     assert await async_setup_component(hass, "http", {})
-    entry = MockConfigEntry(domain=DOMAIN, title="HA Flow Builder")
+    entry = MockConfigEntry(domain=DOMAIN, title="Flowey")
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()

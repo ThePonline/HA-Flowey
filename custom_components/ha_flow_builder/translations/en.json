@@ -2,12 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "HA Flow Builder",
+        "title": "Flowey",
         "description": "Adds the Flows panel to the sidebar. Flows are saved as regular Home Assistant automations."
       }
     },
     "abort": {
-      "single_instance_allowed": "HA Flow Builder is already set up."
+      "single_instance_allowed": "Flowey is already set up."
     }
   },
   "services": {

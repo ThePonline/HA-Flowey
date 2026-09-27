@@ -17,7 +17,7 @@ async def test_user_step_creates_entry(hass: HomeAssistant) -> None:
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "HA Flow Builder"
+    assert result["title"] == "Flowey"
     assert result["data"] == {}
 
 

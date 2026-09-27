@@ -73,8 +73,8 @@ export const EN: Record<string, string> = {
   "Opslaan…": "Saving…",
   "Concept, nog niet actief": "Draft, not active yet",
   "✓ Opgeslagen": "✓ Saved",
-  "Deze automation is buiten Flow Builder gewijzigd (in YAML of de HA-editor). Automatisch opslaan staat stil.":
-    "This automation was changed outside Flow Builder (in YAML or the HA editor). Autosave is paused.",
+  "Deze automation is buiten Flowey gewijzigd (in YAML of de HA-editor). Automatisch opslaan staat stil.":
+    "This automation was changed outside Flowey (in YAML or the HA editor). Autosave is paused.",
   "Overschrijven met deze flow": "Overwrite with this flow",
   "Deze flow is nog niet actief. Maak hem eerst compleet.": "This flow is not active yet. Complete it first.",
   "Flow gestart": "Flow started",

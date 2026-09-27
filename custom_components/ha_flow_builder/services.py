@@ -1,4 +1,4 @@
-"""Actions provided by HA Flow Builder for use in compiled flows."""
+"""Actions provided by Flowey for use in compiled flows."""
 
 from __future__ import annotations
 

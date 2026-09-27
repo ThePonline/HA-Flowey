@@ -41,6 +41,18 @@ export function flowStatus(hass: Hass, flow: FlowRecord, remote: AutomationConfi
   return entity.state === "off" ? "disabled" : "enabled";
 }
 
+/**
+ * True when HA still has exactly what this flow last published and only the managed-by
+ * description is outdated (e.g. after the rename to Flowey). Such a flow can be
+ * republished without asking: nothing was changed outside the panel.
+ */
+export function hasOutdatedMarker(flow: FlowRecord, remote: AutomationConfig | null | undefined): boolean {
+  if (flow.config_hash === null || !remote || hashConfig(remote) !== flow.config_hash) return false;
+  const { config, errors } = compileFlow(flow);
+  if (errors.length || hashConfig(config) === flow.config_hash) return false;
+  return hashConfig({ ...config, description: remote.description }) === flow.config_hash;
+}
+
 export class PublishBlocked extends Error {
   constructor(public issues: CompileIssue[]) {
     super(issues[0]?.message ?? "Flow is onvolledig");
@@ -49,7 +61,7 @@ export class PublishBlocked extends Error {
 
 export class ExternalChange extends Error {
   constructor() {
-    super("Deze automation is buiten Flow Builder gewijzigd.");
+    super("Deze automation is buiten Flowey gewijzigd.");
   }
 }
 
