@@ -1,15 +1,15 @@
 """Actions provided by HA Flow Builder for use in compiled flows."""
+
 from __future__ import annotations
 
 from urllib.parse import urlsplit
 
 import aiohttp
-import voluptuous as vol
-
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 
 from .const import DOMAIN
 
@@ -19,7 +19,9 @@ MAX_RESPONSE_BODY = 10_000
 
 CALL_WEBHOOK_SCHEMA = vol.Schema(
     {
-        vol.Required("url"): vol.All(cv.string, vol.Match(r"^https?://", msg="URL must start with http:// or https://")),
+        vol.Required("url"): vol.All(
+            cv.string, vol.Match(r"^https?://", msg="URL must start with http:// or https://")
+        ),
         vol.Optional("method", default="POST"): vol.All(vol.Upper, vol.In(METHODS)),
         vol.Optional("headers", default={}): {cv.string: cv.string},
         # A string is sent as-is; a mapping or list is sent as JSON.
@@ -46,7 +48,9 @@ def async_register(hass: HomeAssistant) -> None:
             async with session.request(method, data["url"], **kwargs) as response:
                 body = await response.text(errors="replace")
         except (aiohttp.ClientError, TimeoutError) as err:
-            raise HomeAssistantError(f"Webhook {method} {_redact(data['url'])} failed: {err or type(err).__name__}") from err
+            raise HomeAssistantError(
+                f"Webhook {method} {_redact(data['url'])} failed: {err or type(err).__name__}"
+            ) from err
 
         if response.status >= 400:
             raise HomeAssistantError(

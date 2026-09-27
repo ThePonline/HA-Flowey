@@ -1,13 +1,13 @@
 """Websocket commands used by the Flow Builder panel."""
+
 from __future__ import annotations
 
 from typing import Any
 
-import voluptuous as vol
-
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 
 from .store import get_repository
 

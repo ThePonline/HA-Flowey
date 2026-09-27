@@ -1,4 +1,5 @@
 """HA Flow Builder - Homey-style visual flows compiled to native HA automations."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -35,9 +36,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Static paths and websocket commands cannot be unregistered, so they are
     # registered once per HA run even if the entry is reloaded.
     if not data.get("http_registered"):
-        await hass.http.async_register_static_paths([
-            StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "static"), False)
-        ])
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(STATIC_URL, str(Path(__file__).parent / "static"), False)]
+        )
         websocket_api.async_register(hass)
         data["http_registered"] = True
 

@@ -3,6 +3,7 @@
 The executable automation itself lives in Home Assistant's automations.yaml;
 this store only keeps what is needed to draw and edit the flow visually.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -36,18 +37,22 @@ def _migrate_v1_flow(flow: dict[str, Any]) -> dict[str, Any]:
         node_id = f"n{len(nodes) + 1}"
         if nodes:
             source = nodes[-1]
-            edges.append({
-                "id": f"e{len(edges) + 1}",
-                "source": source["id"],
-                "sourceHandle": "yes" if source["type"] == "condition" else "out",
-                "target": node_id,
-            })
-        nodes.append({
-            "id": node_id,
-            "type": node_type,
-            "position": {"x": len(nodes) * NODE_SPACING_X, "y": 0},
-            "data": data,
-        })
+            edges.append(
+                {
+                    "id": f"e{len(edges) + 1}",
+                    "source": source["id"],
+                    "sourceHandle": "yes" if source["type"] == "condition" else "out",
+                    "target": node_id,
+                }
+            )
+        nodes.append(
+            {
+                "id": node_id,
+                "type": node_type,
+                "position": {"x": len(nodes) * NODE_SPACING_X, "y": 0},
+                "data": data,
+            }
+        )
 
     trigger = flow.get("trigger") or {}
     trigger_data: dict[str, Any] = {"kind": "state", "entity_id": trigger.get("entity_id", "")}
@@ -60,8 +65,10 @@ def _migrate_v1_flow(flow: dict[str, Any]) -> dict[str, Any]:
     for condition in flow.get("conditions", []):
         ctype = condition.get("type")
         if ctype == "state":
-            add("condition", {"kind": "state", "entity_id": condition.get("entity_id", ""),
-                              "state": condition.get("state", "")})
+            add(
+                "condition",
+                {"kind": "state", "entity_id": condition.get("entity_id", ""), "state": condition.get("state", "")},
+            )
         elif ctype == "numeric_state":
             data = {"kind": "numeric_state", "entity_id": condition.get("entity_id", "")}
             for key in ("above", "below"):
@@ -69,15 +76,16 @@ def _migrate_v1_flow(flow: dict[str, Any]) -> dict[str, Any]:
                     data[key] = condition[key]
             add("condition", data)
         elif ctype == "time":
-            add("condition", {"kind": "time", "after": condition.get("after", "00:00"),
-                              "before": condition.get("before", "23:59")})
+            add(
+                "condition",
+                {"kind": "time", "after": condition.get("after", "00:00"), "before": condition.get("before", "23:59")},
+            )
 
     for action in flow.get("actions", []):
         if action.get("type") == "delay":
             add("action", {"kind": "delay", "seconds": action.get("seconds", 1)})
         elif action.get("type") == "service":
-            data = {"kind": "service", "service": action.get("service", ""),
-                    "data": action.get("data") or {}}
+            data = {"kind": "service", "service": action.get("service", ""), "data": action.get("data") or {}}
             if action.get("entity_id"):
                 data["target"] = {"entity_id": action["entity_id"]}
             add("action", data)

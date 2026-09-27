@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # HACS shows the tag as the installed version, so it must match what the integration reports.
+      - name: Tag matches manifest and package versions
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest=$(jq -r .version custom_components/ha_flow_builder/manifest.json)
+          package=$(jq -r .version frontend/package.json)
+          echo "tag=$tag manifest=$manifest package=$package"
+          test "$tag" = "$manifest" && test "$tag" = "$package"
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v version="${GITHUB_REF_NAME#v}" '
+            /^## \[/ { if (found) exit; if (index($0, "[" version "]")) { found = 1; next } }
+            found
+          ' CHANGELOG.md > release-notes.md
+          test -s release-notes.md || { echo "No CHANGELOG.md section for ${GITHUB_REF_NAME}"; exit 1; }
+          cat release-notes.md
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          body_path: release-notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}

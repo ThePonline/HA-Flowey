@@ -1,0 +1,5 @@
+# Pins Home Assistant itself; bump together with the HA version you test against.
+pytest-homeassistant-custom-component==0.13.366
+# The frontend version that this Home Assistant release requires (needed by panel_custom).
+home-assistant-frontend==20260826.7
+ruff==0.16.9
