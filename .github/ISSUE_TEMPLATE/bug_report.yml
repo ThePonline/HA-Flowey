@@ -1,0 +1,41 @@
+name: Bug report
+description: Something does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! Please remove secrets (webhook ids, tokens, URLs with keys) from anything you paste.
+  - type: input
+    id: version
+    attributes:
+      label: HA Flow Builder version
+      description: Settings → Devices & services → HA Flow Builder, or HACS.
+      placeholder: "0.12.0"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.9.3"
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: yaml
+    attributes:
+      label: Automation YAML
+      description: The YAML of the flow (YAML button in the editor), if the problem is about a flow.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors
+      description: From the browser console (F12) or the Home Assistant log.
+      render: text

@@ -1,23 +1,73 @@
-# HA Flow Builder
+<p align="center">
+  <img src="custom_components/ha_flow_builder/brand/icon.png" alt="" width="96" height="96">
+</p>
 
-*[English](README.md) · Nederlands*
+<h1 align="center">HA Flow Builder</h1>
 
-Homey-achtige **Advanced Flows** voor Home Assistant. Bouw automatiseringen op een canvas met kaarten:
+<p align="center">
+  Homey-achtige <b>Advanced Flows</b> voor Home Assistant: bouw automatiseringen op een canvas,<br>
+  opgeslagen als gewone Home Assistant-automations.
+</p>
+
+<p align="center">
+  <a href="https://github.com/ThePonline/HA-Flowey/releases"><img alt="Release" src="https://img.shields.io/github/v/release/ThePonline/HA-Flowey?sort=semver"></a>
+  <a href="https://github.com/ThePonline/HA-Flowey/actions/workflows/validate.yml"><img alt="Validate" src="https://img.shields.io/github/actions/workflow/status/ThePonline/HA-Flowey/validate.yml?branch=main&label=validate"></a>
+  <a href="https://hacs.xyz"><img alt="HACS custom repository" src="https://img.shields.io/badge/HACS-custom-41BDF5.svg"></a>
+  <a href="LICENSE"><img alt="Licentie: AGPL-3.0 of commercieel" src="https://img.shields.io/badge/license-AGPL--3.0%20%7C%20commercial-blue"></a>
+</p>
+
+<p align="center"><i><a href="README.md">English</a> · Nederlands</i></p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/editor-dark.png">
+  <img alt="De flow-editor: een bewegingstrigger, een zonvoorwaarde met ja- en nee-pad, en lamp-, timer- en meldingsacties" src="docs/images/editor.png">
+</picture>
+
+Bouw automatiseringen met kaarten:
 **ALS** (trigger) → **EN** (voorwaarde, met ja/nee-uitgang) → **DAN** (actie).
 
 Kies eerst een apparaat, bijvoorbeeld "Haldeur sensor". Daarna zie je alleen de kaarten die bij dat apparaat horen, zoals "geopend", "gesloten" of "batterij laag". Die kaarten komen rechtstreeks uit Home Assistant en zijn in je eigen taal.
 
-Elke flow wordt opgeslagen als **gewone Home Assistant-automation** in `automations.yaml` (id `flowey_…`). Home Assistant voert de flow dus zelf uit, met traces, run-modes en alles wat daarbij hoort. De visuele indeling (posities en verbindingen) bestaat alleen in dit paneel.
+Elke flow wordt opgeslagen als **gewone Home Assistant-automation** in `automations.yaml` (id `flowey_…`). Home Assistant voert de flow dus zelf uit, met traces, run-modes en alles wat daarbij hoort. De visuele indeling (posities en verbindingen) bestaat alleen in dit paneel. Verwijder je het paneel, dan blijven je automations gewoon werken.
 
 ## Installeren
 
-1. Kopieer `custom_components/ha_flow_builder` naar de map `config/custom_components/` van je Home Assistant.
-   Of via HACS: *HACS → ⋮ → Custom repositories* → `https://github.com/ThePonline/HA-Flowey`, type *Integration*.
-2. Herstart Home Assistant.
-3. Ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → HA Flow Builder*.
+[![Open je Home Assistant en open deze repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ThePonline&repository=HA-Flowey&category=integration)
+
+**Via HACS (aanbevolen)**
+
+1. Klik op de knop hierboven, of ga naar *HACS → ⋮ → Custom repositories* en voeg `https://github.com/ThePonline/HA-Flowey` toe met type *Integration*.
+2. Installeer **HA Flow Builder** en herstart Home Assistant.
+3. Voeg de integratie toe: [![Integratie toevoegen](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ha_flow_builder)
+   of ga naar *Instellingen → Apparaten & diensten → Integratie toevoegen → HA Flow Builder*.
 4. In de zijbalk verschijnt **Flows** (alleen voor beheerders).
 
-Je configuratie moet `automation: !include automations.yaml` bevatten. Dat staat standaard in elke installatie.
+**Handmatig**: download de nieuwste [release](https://github.com/ThePonline/HA-Flowey/releases), kopieer `custom_components/ha_flow_builder` naar `config/custom_components/` en ga verder bij stap 2.
+
+**Vereisten**: Home Assistant 2024.10 of nieuwer, en `automation: !include automations.yaml` in je configuratie (dat staat standaard in elke installatie).
+
+## Schermafbeeldingen
+
+<table>
+  <tr>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png">
+        <img alt="Overzicht van alle flows met status en laatste run" src="docs/images/overview.png">
+      </picture>
+    </td>
+    <td width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/inspector-dark.png">
+        <img alt="Een lampkaart bewerken: welke lampen, aan, helderheid en overgang" src="docs/images/inspector.png">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">Overzicht: status en laatste run van elke flow</td>
+    <td align="center">Een kaart bewerken</td>
+  </tr>
+</table>
 
 ## Kaarten
 
@@ -115,16 +165,23 @@ Let op: headers (bijvoorbeeld een API-sleutel) worden net als de rest van de aut
 
 - **Gewijzigd in YAML**: bewerk je de automation buiten dit paneel (in YAML of de HA-editor), dan toont het paneel dat. Voordat opslaan vanaf het canvas die wijziging overschrijft, vraagt het paneel om bevestiging.
 - **Concept**: een onvolledige flow wordt opgeslagen als concept en is nog niet actief.
-- **▶ Test** voert de acties direct uit en slaat de triggers over. Bij meerdere triggers met elk een eigen pad doet een test daarom niets; gebruik dan **Traces**.
+- **▶ Test** voert de flow direct uit alsof de trigger gebeurde. Heeft elke trigger een eigen pad, dan vraagt de knop welke trigger je wilt nabootsen.
+- **Laatste run**: stopte een flow omdat een EN-kaart niet klopte, dan staat er *voorwaarden niet voldaan*. Dat is geen fout.
 
 ## Ontwikkelen
 
 ```bash
+# Frontend (Node 24)
 cd frontend
 npm install
-npm test          # compiler-tests (Vitest)
-npm run build     # typecheck + bundel naar custom_components/ha_flow_builder/static/flow_builder.js
+npm test          # tests voor compiler en UI-logica (Vitest)
+npm run build     # typecheck + bundel naar custom_components/ha_flow_builder/static/
 npm run dev       # bouwt opnieuw bij elke wijziging
+
+# Backend (Python 3.14), vanuit de hoofdmap
+pip install -r requirements_test.txt
+pytest            # integratietests tegen een echte Home Assistant-core
+ruff check . && ruff format --check .
 ```
 
 Structuur:
@@ -133,5 +190,17 @@ Structuur:
 - `frontend/src/inspector/`: formulieren per kaarttype, apparaat → kaart → extra velden.
 - `frontend/src/api/ha.ts`: websocket/REST-aanroepen naar Home Assistant.
 - `custom_components/ha_flow_builder/`: dunne integratie met panel, opslag van de canvas-indeling (met migratie vanaf v0.4) en websocket-API.
+- `tests/`: backend-tests (pytest-homeassistant-custom-component).
 
 Na een nieuwe build is een herstart van Home Assistant nodig voordat browsers de nieuwe bundel laden (cache-busting via `?v=`).
+
+Lees [CONTRIBUTING.md](CONTRIBUTING.md) voordat je een pull request opent. Wat er per versie veranderde staat in [CHANGELOG.md](CHANGELOG.md).
+
+## Licentie
+
+HA Flow Builder heeft een **duale licentie**:
+
+- **Gratis: [GNU AGPL-3.0](LICENSE).** Gebruik het thuis, pas het aan, deel het. Verspreid je een aangepaste versie, of draai je een aangepaste versie als dienst voor anderen, dan moet je je broncode onder dezelfde licentie publiceren.
+- **Commerciële licentie.** Voor gebruik in een commercieel product of een commerciële dienst zonder de AGPL-verplichtingen (bijvoorbeeld in closed-source software, meegeleverd met hardware of als onderdeel van een betaalde installatieservice). Neem contact op met [@ThePonline](https://github.com/ThePonline) voor de voorwaarden.
+
+De meegebundelde bibliotheken (React, React Flow, yaml) hebben een MIT-licentie; hun licentieteksten staan in [THIRD_PARTY_LICENSES.md](custom_components/ha_flow_builder/static/THIRD_PARTY_LICENSES.md).

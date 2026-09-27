@@ -1,0 +1,16 @@
+name: Feature request
+description: A new card, option or improvement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to automate?
+      description: Describe the situation. An example flow helps a lot ("WHEN … AND … THEN …").
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How could the flow builder support this? How does Homey or Home Assistant do it today?
