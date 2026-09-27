@@ -8,6 +8,7 @@ import {
   setAutomationEnabled,
   writeAutomationConfig,
   type Hass,
+  type TraceSummary,
 } from "./api/ha";
 import { automationId, compileFlow, hashConfig } from "./compiler/compile";
 import type { AutomationConfig, CompileIssue, FlowRecord } from "./compiler/types";
@@ -92,4 +93,26 @@ export async function applyEnabled(getHass: () => Hass, flow: FlowRecord): Promi
 export async function removeFlow(hass: Hass, flow: FlowRecord): Promise<void> {
   if (flow.config_hash !== null) await deleteAutomationConfig(hass, automationId(flow.id));
   await deleteFlowRecord(hass, flow.id);
+}
+
+/** HA trace outcomes (script_execution) in plain words. */
+const RUN_RESULTS: Record<string, [string, string]> = {
+  finished: ["✓", "gelukt"],
+  failed_conditions: ["–", "voorwaarden niet voldaan"],
+  error: ["⚠", "fout"],
+  cancelled: ["↻", "onderbroken (opnieuw gestart)"],
+  aborted: ["⚠", "afgebroken"],
+  failed_single: ["–", "overgeslagen (liep al)"],
+  failed_max_runs: ["–", "overgeslagen (te vaak tegelijk)"],
+};
+
+/** Icon, (Dutch, translatable) text and error flag for the last run of a flow. */
+export function runOutcome(run: TraceSummary): { icon: string; text: string; failed: boolean } {
+  if (run.state === "running") return { icon: "▶", text: "loopt nu", failed: false };
+  const execution = run.script_execution ?? "";
+  // AND cards without a "no" path compile to condition steps in the action sequence.
+  // When one does not hold, HA reports the run as "aborted" but without an error.
+  if (execution === "aborted" && !run.error) return { icon: "–", text: RUN_RESULTS.failed_conditions[1], failed: false };
+  const [icon, text] = RUN_RESULTS[execution] ?? ["", execution];
+  return { icon, text, failed: execution === "error" || execution === "aborted" };
 }

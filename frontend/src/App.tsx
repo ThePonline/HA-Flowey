@@ -20,7 +20,7 @@ import type { AutomationConfig, FlowNode, FlowRecord } from "./compiler/types";
 import { Editor } from "./canvas/Editor";
 import { duplicateFlow, newFlow } from "./canvas/graph";
 import { toast, useHass } from "./context";
-import { flowStatus, publishFlow, removeFlow, STATUS_LABELS } from "./flowActions";
+import { flowStatus, publishFlow, removeFlow, runOutcome, STATUS_LABELS } from "./flowActions";
 import { LangContext, makeT, resolveLang, timeAgo, useLang, useT, type LangSetting, type LangState } from "./i18n";
 import { compileFlow } from "./compiler/compile";
 import { catalogItem, describeNodeLine } from "./nodes/catalog";
@@ -238,23 +238,12 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
   );
 }
 
-/** HA trace outcomes (script_execution) in plain words. */
-const RUN_RESULTS: Record<string, [string, string]> = {
-  finished: ["✓", "gelukt"],
-  failed_conditions: ["–", "voorwaarden niet voldaan"],
-  error: ["⚠", "fout"],
-  cancelled: ["↻", "onderbroken (opnieuw gestart)"],
-  aborted: ["⚠", "afgebroken"],
-  failed_single: ["–", "overgeslagen (liep al)"],
-  failed_max_runs: ["–", "overgeslagen (te vaak tegelijk)"],
-};
-
 function LastRun({ run, lang }: { run?: TraceSummary; lang: "nl" | "en" }) {
   const t = useT();
   if (!run) return <span>{t("nog niet gestart")}</span>;
-  const [icon, text] = run.state === "running" ? ["▶", "loopt nu"] : RUN_RESULTS[run.script_execution ?? ""] ?? ["", run.script_execution ?? ""];
+  const { icon, text, failed } = runOutcome(run);
   return (
-    <span className={run.script_execution === "error" || run.script_execution === "aborted" ? "run-error" : ""} title={run.error}>
+    <span className={failed ? "run-error" : ""} title={run.error}>
       {t("laatst {when}", { when: timeAgo(run.timestamp.start, lang) })}: {icon} {t(text)}
     </span>
   );

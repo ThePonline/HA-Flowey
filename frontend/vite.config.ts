@@ -11,6 +11,8 @@ export default defineConfig({
   build: {
     outDir: path("../custom_components/ha_flow_builder/static"),
     emptyOutDir: true,
+    // Bundled libraries are MIT-licensed; their notices ship next to the bundle.
+    license: { fileName: "THIRD_PARTY_LICENSES.md" },
     minify: true,
     rolldownOptions: { output: { minify: true } },
     lib: {

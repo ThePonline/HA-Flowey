@@ -96,6 +96,7 @@ ha-flow-builder-panel { display: block; height: 100%; }
 .flowey .page-head { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .flowey .page-head > div { flex: 1; }
 .flowey .page-head h1 { font-size: 28px; }
+.flowey .page-head .language { width: auto; flex: none; }
 .flowey .empty {
   padding: 48px 24px; text-align: center; border: 1px dashed var(--fl-divider);
   border-radius: 18px; background: var(--fl-card);
