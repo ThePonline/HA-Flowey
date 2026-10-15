@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -9,7 +12,7 @@ from homeassistant.setup import async_setup_component
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.ha_flow_builder import _bundle_version
+from custom_components.ha_flow_builder import _bundle_version, _short_version
 from custom_components.ha_flow_builder.const import DOMAIN, PANEL_URL_PATH, STATIC_URL
 from custom_components.ha_flow_builder.services import SERVICE_CALL_WEBHOOK
 
@@ -19,7 +22,9 @@ async def test_setup_registers_panel_and_action(hass: HomeAssistant, setup_integ
     assert setup_integration.state is ConfigEntryState.LOADED
 
     panel = hass.data[DATA_PANELS][PANEL_URL_PATH]
-    assert panel.sidebar_title == "Flowey"
+    manifest = Path(__file__).parents[1] / "custom_components" / DOMAIN / "manifest.json"
+    version = json.loads(manifest.read_text())["version"]
+    assert panel.sidebar_title == f"Flowey ({_short_version(version)})"
     assert panel.require_admin is True
     assert panel.config["_panel_custom"]["module_url"] == f"{STATIC_URL}/flow_builder.js?v=123"
 
@@ -62,3 +67,10 @@ async def test_renames_entry_from_before_flowey(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert entry.title == "Flowey"
+
+
+@pytest.mark.parametrize(
+    ("version", "short"), [("1.11.0", "1.11"), ("1.11.2", "1.11.2"), ("1.10.0", "1.10"), ("2.0", "2.0")]
+)
+def test_short_version(version: str, short: str) -> None:
+    assert _short_version(version) == short

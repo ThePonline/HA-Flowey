@@ -55,6 +55,7 @@ export const CATALOG: { title: string; type: NodeType; items: CatalogItem[] }[] 
     items: [
       { key: "a-device", type: "action", kind: "device", icon: "📟", title: "Apparaat", hint: "Zet aan/uit, dim, …", defaults: {} },
       { key: "a-light", type: "action", kind: "light", icon: "💡", title: "Lamp", hint: "Aan/uit, dimmen, feller of donkerder", defaults: { action: "on" } },
+      { key: "a-remote", type: "action", kind: "remote", icon: "📡", title: "Afstandsbediening", hint: "Verstuur een geleerde knop (infrarood of RF)", defaults: {} },
       { key: "a-service", type: "action", kind: "service", icon: "⚙️", title: "Actie (service)", hint: "Elke Home Assistant-actie", defaults: {} },
       { key: "a-notify", type: "action", kind: "notify", icon: "🔔", title: "Melding sturen", hint: "Naar je telefoon of in Home Assistant", defaults: { target: "persistent" } },
       { key: "a-webhook", type: "action", kind: "webhook", icon: "🌐", title: "Webhook", hint: "Start een flow op Homey of roep een webservice aan", defaults: { mode: "homey" } },
@@ -242,6 +243,11 @@ export function describeNode(hass: Hass, node: FlowNode, t: Translate, deviceLab
         default:
           return { subject, text: (data.brightness ? t("aan op {percent} %", { percent: data.brightness }) : t("aan")) + over };
       }
+    }
+    case "action:remote": {
+      if (!data.command) return { text: t("Kies een knop…") };
+      const times = Number(data.repeats) > 1 ? ` (${data.repeats}×)` : "";
+      return { subject: data.device, text: t("knop \"{name}\" versturen", { name: data.command }) + times };
     }
     case "action:webhook": {
       if ((data.mode ?? "homey") === "homey") {

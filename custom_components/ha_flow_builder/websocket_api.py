@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
+from . import remotes
 from .store import get_repository
 
 NODE_SCHEMA = vol.Schema(
@@ -53,6 +54,7 @@ def async_register(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_delete_flow)
     websocket_api.async_register_command(hass, ws_get_settings)
     websocket_api.async_register_command(hass, ws_set_settings)
+    remotes.async_register(hass)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "ha_flow_builder/flows/list"})

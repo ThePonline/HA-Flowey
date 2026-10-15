@@ -86,6 +86,7 @@ Elke flow wordt opgeslagen als **gewone Home Assistant-automation** in `automati
 | Aanwezigheid (iemand komt/vertrekt, eerste komt/laatste vertrekt, per zone) | Aanwezigheid (iemand/niemand, personen wel/niet in zone) | Wacht tot… (met maximum; uitgangen *gebeurd* / *tijd verstreken*) |
 | Webhook ontvangen (bijv. vanuit Homey) | Timer loopt | Timer (starten, stoppen, pauzeren) |
 | Timer afgelopen | | Herhaal (x keer, zolang/totdat; uitgangen *herhaal* / *klaar*) |
+| | | Afstandsbediening (geleerde infrarood/RF-knop versturen) |
 
 Regels op het canvas:
 - Meerdere lijnen uit één uitgang lopen **parallel**.
@@ -140,6 +141,16 @@ Met de ALS-kaart **Webhook ontvangen** start Homey (of een andere dienst) een fl
 3. Meegestuurde gegevens gebruik je verderop met `{{ trigger.json.naam }}`.
 
 Standaard werkt het adres alleen vanuit je eigen netwerk (Homey Pro). Voor Homey Cloud zet je dat uit en gebruik je het externe adres van Home Assistant (bijv. Nabu Casa). Het webhook-ID werkt als wachtwoord.
+
+## Afstandsbediening (Broadlink, bijv. RM4 mini)
+
+Heb je een Broadlink-apparaat in Home Assistant (integratie *Broadlink*), dan staat in het overzicht de knop **📡 Afstandsbediening**:
+
+1. Vul een **naam** in (bijv. *lamp aan*) en eventueel een **groep** (bijv. *TV*), en kies **infrarood** of **RF 433 MHz**.
+2. Klik **Leer knop** en volg de aanwijzing: richt je afstandsbediening op de RM4 en druk op de knop. Bij RF houd je de knop eerst ingedrukt (de frequentie wordt gezocht) en druk je daarna nog één keer.
+3. Het **logboek** laat zien welke knop is geleerd, getest of verwijderd, en waarom iets mislukte (bijv. geen signaal binnen 30 seconden).
+
+Gebruik de knop daarna in een flow met de DAN-kaart **Afstandsbediening**, bijvoorbeeld: **ALS** Tijdstip 19:00 → **DAN** Afstandsbediening *lamp aan*. De kaart wordt de gewone HA-actie `remote.send_command`; de codes blijven in de opslag van de Broadlink-integratie, dus ook zonder Flowey blijft alles werken.
 
 ## Apparaten hernoemen
 

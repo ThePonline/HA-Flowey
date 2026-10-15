@@ -10,6 +10,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
+from homeassistant.loader import async_get_integration
 
 from . import services, websocket_api
 from .const import DOMAIN, LEGACY_TITLE, PANEL_COMPONENT, PANEL_TITLE, PANEL_URL_PATH, STATIC_URL
@@ -64,11 +65,13 @@ async def _register_panel(hass: HomeAssistant) -> None:
         return
 
     manifest_version = await hass.async_add_executor_job(_bundle_version)
+    integration = await async_get_integration(hass, DOMAIN)
     await panel_custom.async_register_panel(
         hass=hass,
         frontend_url_path=PANEL_URL_PATH,
         webcomponent_name=PANEL_COMPONENT,
-        sidebar_title=PANEL_TITLE,
+        # The version in the sidebar shows at a glance which release is installed.
+        sidebar_title=f"{PANEL_TITLE} ({_short_version(str(integration.version))})",
         sidebar_icon="mdi:graph-outline",
         # Cache-bust the bundle whenever it is rebuilt.
         module_url=f"{STATIC_URL}/flow_builder.js?v={manifest_version}",
@@ -77,6 +80,11 @@ async def _register_panel(hass: HomeAssistant) -> None:
         require_admin=True,
     )
     data["panel_registered"] = True
+
+
+def _short_version(version: str) -> str:
+    """1.11.0 → 1.11; patch releases keep their full number (1.11.2)."""
+    return version.removesuffix(".0") if version.count(".") == 2 else version
 
 
 def _bundle_version() -> str:

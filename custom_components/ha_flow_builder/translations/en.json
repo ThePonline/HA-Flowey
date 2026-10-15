@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Flowey",
-        "description": "Adds the Flows panel to the sidebar. Flows are saved as regular Home Assistant automations."
+        "description": "Adds the Flowey panel to the sidebar. Flows are saved as regular Home Assistant automations."
       }
     },
     "abort": {

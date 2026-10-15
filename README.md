@@ -84,6 +84,7 @@ Every flow is saved as a **regular Home Assistant automation** in `automations.y
 | Presence (someone arrives/leaves, first arrives/last leaves, per zone) | Presence | Wait until… (with maximum; outputs *happened* / *timed out*) |
 | Webhook received (e.g. from Homey) | Timer running | Timer (start, stop, pause) |
 | Timer finished | | Repeat (x times, while/until; outputs *repeat* / *done*) |
+| | | Remote control (send a learned infrared/RF button) |
 
 Canvas rules:
 - Several connections from one output run **in parallel**.
@@ -96,6 +97,7 @@ Canvas rules:
 - **Language**: Dutch or English (or follow Home Assistant), including the device card texts.
 - **Rename devices** from the editor, exactly like HA's device settings (entity IDs stay the same).
 - **Homey**: the *Webhook* action starts Homey flows (paste the Homey webhook URL); the *Webhook received* trigger lets Homey start flows in HA.
+- **Remote control**: learn infrared and RF buttons of a Broadlink remote (e.g. RM4 mini) under your own names, with a live instruction and a log, and send them from any flow.
 - **Timers** survive an HA restart; *Wait until…* is simpler but does not.
 - **Test** simulates a chosen trigger; the overview shows when each flow last ran and whether it succeeded.
 - **Copy/paste** cards (Ctrl+C / Ctrl+V / Ctrl+D) and duplicate whole flows.

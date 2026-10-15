@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-15
+
+### Added
+- **Remote control (Broadlink, e.g. RM4 mini)**: a new *Remote control* page (button in the overview, shown when a Broadlink remote is set up) to learn infrared and RF 433 MHz buttons under your own name and group. While learning, Home Assistant's instruction ("press the button…") is shown live in the panel, and a log shows which buttons were learned, tested or removed, including failures such as "no signal within 30 seconds". Learned buttons can be tested and removed there.
+- **Remote control action card**: sends a learned button (optionally several times), e.g. *WHEN Time 19:00 → THEN Remote control "lamp aan"*. It compiles to the native `remote.send_command` action; the codes stay in the Broadlink integration's own storage.
+
+### Changed
+- The sidebar shows the installed version, e.g. **Flowey (0.14)**, so you can see at a glance whether an update is live. Installations that still show **Flows** run 0.12.0 or older.
+
 ## [0.13.0] - 2026-09-27
 
 ### Changed
@@ -54,7 +63,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - First public version: a canvas editor with device, entity, time, sun, weather and presence triggers and conditions, and light, notify, webhook, service and delay actions.
 - Flows are saved as regular automations in `automations.yaml`, with autosave, Dutch/English texts and detection of external YAML edits.
 
-[Unreleased]: https://github.com/ThePonline/HA-Flowey/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/ThePonline/HA-Flowey/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/ThePonline/HA-Flowey/releases/tag/v0.14.0
 [0.13.0]: https://github.com/ThePonline/HA-Flowey/releases/tag/v0.13.0
 [0.12.0]: https://github.com/ThePonline/HA-Flowey/releases/tag/v0.12.0
 [0.11.0]: https://github.com/ThePonline/HA-Flowey/commit/fd48ac1

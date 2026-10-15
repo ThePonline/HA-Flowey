@@ -1,7 +1,10 @@
 /** Right-hand panel that edits the selected card. */
 import { useEffect, useMemo, useState } from "react";
 import { parse, stringify } from "yaml";
-import { callWebhookNow, createTimer, entityName, entityOptions, errorMessage, serviceName, type Hass } from "../api/ha";
+import {
+  buttonTypeLabel, callWebhookNow, createTimer, entityName, entityOptions, errorMessage, listRemotes, sendButton, serviceName,
+  type BroadlinkRemote, type Hass,
+} from "../api/ha";
 import { WEBHOOK_ACTION, webhookRequest } from "../compiler/compile";
 import type { CompileIssue, FlowNode, HttpMethod, LightAction, WebhookData, WebhookMethod } from "../compiler/types";
 import { useHass } from "../context";
@@ -182,6 +185,8 @@ function KindForm({ type, data, set }: { type: FlowNode["type"]; data: Data; set
       return <WaitForm data={data} set={set} />;
     case "action:light":
       return <LightForm data={data} set={set} />;
+    case "action:remote":
+      return <RemoteForm data={data} set={set} />;
     case "action:webhook":
       return <WebhookForm data={data} set={set} />;
     case "action:notify":
@@ -673,6 +678,96 @@ function LightForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
           ⚠ {t("Home Assistant ziet {lamps} niet als dimbaar; de helderheid wordt daar genegeerd. Controleer in HA of dit een lamp met dimfunctie is.", { lamps: notDimmable.map(id => entityName(hass, id)).join(", ") })}
         </div>
       )}
+    </>
+  );
+}
+
+/** Sends a button learned on the Afstandsbediening page. */
+function RemoteForm({ data, set }: { data: Data; set: (patch: Data) => void }) {
+  const hass = useHass();
+  const t = useT();
+  const [remotes, setRemotes] = useState<BroadlinkRemote[] | null>(null);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const load = (refresh = false) =>
+    listRemotes(hass, refresh)
+      .then(list => {
+        setRemotes(list);
+        setError("");
+        // Most homes have one remote: pick it so only the button is left to choose.
+        if (!data.entity_id && list.length === 1) set({ entity_id: list[0].entity_id });
+      })
+      .catch(err => setError(errorMessage(err)));
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const remote = remotes?.find(item => item.entity_id === data.entity_id);
+  const options: SearchOption[] = (remote?.buttons ?? []).map(button => ({
+    value: JSON.stringify([button.device, button.command]),
+    label: button.command,
+    group: button.device,
+    secondary: buttonTypeLabel(button.type),
+  }));
+  const selected = data.device && data.command ? JSON.stringify([data.device, data.command]) : undefined;
+  const missing = remote && selected && !options.some(option => option.value === selected);
+
+  const test = async () => {
+    setResult(null);
+    try {
+      await sendButton(hass, data.entity_id, data.device, data.command);
+      setResult({ ok: true, text: t("Verstuurd.") });
+    } catch (err) {
+      setResult({ ok: false, text: errorMessage(err) });
+    }
+  };
+
+  return (
+    <>
+      {error && <div className="issue">{error}</div>}
+      {remotes?.length === 0 && (
+        <div className="issue">{t("Geen Broadlink-apparaat gevonden. Voeg in Home Assistant de integratie Broadlink toe.")}</div>
+      )}
+      {(remotes?.length ?? 0) > 1 && (
+        <Field label="Apparaat">
+          <select className="input" value={data.entity_id ?? ""} onChange={event => set({ entity_id: event.target.value })}>
+            <option value="" disabled>{t("Kies een apparaat…")}</option>
+            {remotes!.map(item => <option key={item.entity_id} value={item.entity_id}>{entityName(hass, item.entity_id)}</option>)}
+          </select>
+        </Field>
+      )}
+      {remote && (
+        <Field label="Knop" hint="Nieuwe knoppen leer je via Afstandsbediening, rechtsboven in het overzicht van Flowey.">
+          <SearchSelect value={selected} options={options} placeholder="Zoek een geleerde knop…"
+            onChange={value => {
+              const [device, command] = JSON.parse(value) as [string, string];
+              set({ device, command });
+            }} />
+        </Field>
+      )}
+      {remote && remote.buttons.length === 0 && (
+        <div className="issue">{t("Nog geen knoppen geleerd op dit apparaat. Leer ze via Afstandsbediening in het overzicht van Flowey.")}</div>
+      )}
+      {missing && (
+        <div className="issue">
+          {t("De knop \"{name}\" ({group}) is niet (meer) geleerd op dit apparaat.", { name: data.command, group: data.device })}
+        </div>
+      )}
+      <div className="rename-row">
+        <button type="button" className="link-btn" onClick={() => void load(true)}>↻ {t("Knoppenlijst vernieuwen")}</button>
+      </div>
+      <Field label="Aantal keer versturen (optioneel)" hint="Handig als het apparaat een signaal soms mist.">
+        <input className="input" type="number" min={1} max={20} value={data.repeats ?? ""} placeholder="1"
+          onChange={event => set({ repeats: event.target.value === "" ? undefined : Number(event.target.value) })} />
+      </Field>
+      <div className="field">
+        <button type="button" className="btn secondary" disabled={!data.entity_id || !data.command} onClick={() => void test()}>
+          ▶ {t("Nu versturen (test)")}
+        </button>
+        {result && <span className={result.ok ? "success" : "issue"}>{result.ok ? "✔" : "✘"} {result.text}</span>}
+      </div>
     </>
   );
 }

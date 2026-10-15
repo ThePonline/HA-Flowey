@@ -24,6 +24,7 @@ export interface HassEntity {
   device_id?: string | null;
   area_id?: string | null;
   name?: string | null;
+  platform?: string;
   hidden?: boolean;
   entity_category?: string | null;
 }
@@ -48,6 +49,9 @@ export interface Hass {
   callWS<T>(msg: Record<string, unknown>): Promise<T>;
   callApi<T>(method: "GET" | "POST" | "PUT" | "DELETE", path: string, data?: unknown): Promise<T>;
   callService(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
+  connection: {
+    subscribeMessage<T>(callback: (message: T) => void, subscribe: Record<string, unknown>): Promise<() => Promise<void>>;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -160,6 +164,85 @@ export const callWebhookNow = (hass: Hass, data: Record<string, unknown>) =>
       return_response: true,
     })
     .then(result => result.response);
+
+// ---------------------------------------------------------------------------
+// Broadlink remotes: learned infrared / RF buttons (our integration)
+// ---------------------------------------------------------------------------
+
+export interface RemoteButton {
+  /** Broadlink "device": the group the button was learned in. */
+  device: string;
+  command: string;
+  type: "ir" | "rf" | null;
+  /** Learned twice (alternating codes, e.g. a toggle). */
+  toggle: boolean;
+}
+
+export const buttonTypeLabel = (type: RemoteButton["type"]) => (type === "rf" ? "RF" : type === "ir" ? "IR" : "?");
+
+export interface BroadlinkRemote {
+  entity_id: string;
+  buttons: RemoteButton[];
+}
+
+export type LearnFailure = "timeout" | "turned_off" | "unavailable" | "rf_unsupported" | "no_code" | "error";
+export type LearnResult =
+  | { learned: true; button: RemoteButton }
+  | { learned: false; reason: LearnFailure; message: string };
+
+/** Whether a Broadlink remote (e.g. an RM4 mini) is set up, so learning buttons is possible. */
+export const hasBroadlinkRemote = (hass: Hass) =>
+  Object.values(hass.entities ?? {}).some(entry => entry.platform === "broadlink" && entry.entity_id.startsWith("remote."));
+
+let remotesCache: Promise<BroadlinkRemote[]> | undefined;
+/** Broadlink remotes with their learned buttons; `refresh` reloads after learning or deleting. */
+export function listRemotes(hass: Hass, refresh = false): Promise<BroadlinkRemote[]> {
+  if (refresh || !remotesCache) {
+    remotesCache = hass
+      .callWS<{ remotes: BroadlinkRemote[] }>({ type: "ha_flow_builder/remotes/list" })
+      .then(result => result.remotes)
+      .catch(error => {
+        remotesCache = undefined;
+        throw error;
+      });
+  }
+  return remotesCache;
+}
+
+/** Puts the remote in learning mode; resolves once a button was pressed or the attempt failed (~30 s). */
+export const learnButton = (hass: Hass, entityId: string, device: string, command: string, commandType: "ir" | "rf") =>
+  hass.callWS<LearnResult>({
+    type: "ha_flow_builder/remotes/learn", entity_id: entityId, device, command, command_type: commandType,
+  });
+
+export const deleteButton = (hass: Hass, entityId: string, device: string, command: string) =>
+  hass.callWS({ type: "ha_flow_builder/remotes/delete", entity_id: entityId, device, command });
+
+export const sendButton = (hass: Hass, entityId: string, device: string, command: string) =>
+  hass.callService("remote", "send_command", { entity_id: entityId, device, command });
+
+interface PersistentNotification {
+  notification_id: string;
+  title?: string | null;
+  message: string;
+}
+
+/**
+ * Follows the notification Broadlink shows while learning ("Press the 'x' button."),
+ * so the panel can show the same instruction. Calls back with null when it disappears.
+ */
+export function subscribeLearnNotification(hass: Hass, onChange: (message: string | null) => void): Promise<() => Promise<void>> {
+  return hass.connection.subscribeMessage<{ type: string; notifications: Record<string, PersistentNotification> }>(
+    event => {
+      // RF buttons first need a frequency sweep ("Press and hold …"), then the button itself.
+      const learn = Object.values(event.notifications)
+        .find(item => item.notification_id === "learn_command" || item.notification_id === "sweep_frequency");
+      if (!learn) return;
+      onChange(event.type === "removed" ? null : learn.message);
+    },
+    { type: "persistent_notification/subscribe" },
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Device automation cards ("Haldeur sensor → geopend")

@@ -481,6 +481,32 @@ describe("repeat card", () => {
   });
 });
 
+describe("remote buttons", () => {
+  const remoteFlow = (data: Record<string, unknown>) => compileFlow(flow(
+    [trigger("t", { kind: "time", at: "19:00" }), action("r", { kind: "remote", ...data } as any)],
+    [edge("t", "r")],
+  ));
+
+  it("sends a learned button with remote.send_command", () => {
+    const result = remoteFlow({ entity_id: "remote.rm4_mini", device: "Woonkamer", command: "lamp aan" });
+    expect(result.errors).toEqual([]);
+    expect(result.config.actions).toEqual([{
+      action: "remote.send_command",
+      target: { entity_id: "remote.rm4_mini" },
+      data: { device: "Woonkamer", command: "lamp aan" },
+    }]);
+    expect(remoteFlow({ entity_id: "remote.rm4_mini", device: "tv", command: "volume_up", repeats: 3 }).config.actions)
+      .toEqual([{ action: "remote.send_command", target: { entity_id: "remote.rm4_mini" }, data: { device: "tv", command: "volume_up", num_repeats: 3 } }]);
+  });
+
+  it("reports a missing remote, button or bad repeat count", () => {
+    expect(remoteFlow({}).errors.map(e => e.message)).toEqual(["Kies een afstandsbediening."]);
+    expect(remoteFlow({ entity_id: "remote.rm4_mini" }).errors.map(e => e.message)).toEqual(["Kies een geleerde knop."]);
+    expect(remoteFlow({ entity_id: "remote.rm4_mini", device: "tv", command: "aan", repeats: 0 }).errors.map(e => e.message))
+      .toEqual(["Het aantal keer moet tussen 1 en 20 liggen."]);
+  });
+});
+
 describe("hashConfig", () => {
   it("ignores key order", () => {
     expect(hashConfig({ a: 1, b: [{ c: 2, d: 3 }] })).toBe(hashConfig({ b: [{ d: 3, c: 2 }], a: 1 }));

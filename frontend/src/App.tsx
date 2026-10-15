@@ -4,6 +4,7 @@ import {
   errorMessage,
   findAutomationEntity,
   getAutomationConfig,
+  hasBroadlinkRemote,
   getSettings,
   latestRuns,
   listFlows,
@@ -25,6 +26,7 @@ import { LangContext, makeT, resolveLang, timeAgo, useLang, useT, type LangSetti
 import { compileFlow } from "./compiler/compile";
 import { catalogItem, describeNodeLine } from "./nodes/catalog";
 import { useCardLabel } from "./nodes/useCardLabel";
+import { RemotesPage } from "./remotes/RemotesPage";
 
 export function App({ narrow }: { narrow: boolean }) {
   const hass = useHass();
@@ -71,6 +73,7 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
   const [remote, setRemote] = useState<Record<string, AutomationConfig | null>>({});
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<FlowRecord | null>(null);
+  const [remotesOpen, setRemotesOpen] = useState(false);
   const [runs, setRuns] = useState<Record<string, TraceSummary>>({});
 
   // Last run per flow; refreshed regularly while the overview is open.
@@ -112,6 +115,8 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  if (remotesOpen) return <RemotesPage narrow={narrow} onBack={() => setRemotesOpen(false)} />;
 
   if (editing) {
     return (
@@ -194,6 +199,9 @@ function FlowsPage({ narrow }: { narrow: boolean }) {
           <option value="nl">Nederlands</option>
           <option value="en">English</option>
         </select>
+        {hasBroadlinkRemote(hass) && (
+          <button type="button" className="btn secondary" onClick={() => setRemotesOpen(true)}>📡 {t("Afstandsbediening")}</button>
+        )}
         <button type="button" className="btn" onClick={() => setEditing(newFlow(t("Nieuwe flow")))}>＋ {t("Nieuwe flow")}</button>
       </header>
 

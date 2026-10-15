@@ -446,6 +446,19 @@ function actionStep(nodeId: string, data: ActionData, errors: CompileIssue[]): H
         data: timerDuration ? { duration: timerDuration } : undefined,
       });
     }
+    case "remote": {
+      if (!data.entity_id) return fail("Kies een afstandsbediening.");
+      if (!data.device || !data.command) return fail("Kies een geleerde knop.");
+      const repeats = toNumber(data.repeats);
+      if (repeats !== undefined && (!Number.isInteger(repeats) || repeats < 1 || repeats > 20)) {
+        return fail("Het aantal keer moet tussen 1 en 20 liggen.");
+      }
+      return {
+        action: "remote.send_command",
+        target: { entity_id: data.entity_id },
+        data: clean({ device: data.device, command: data.command, num_repeats: repeats && repeats > 1 ? repeats : undefined }),
+      };
+    }
     case "light": {
       if (!data.entities?.length) return fail("Kies minstens één lamp.");
       const action = data.action ?? "on";

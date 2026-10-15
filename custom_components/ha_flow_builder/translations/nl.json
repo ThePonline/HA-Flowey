@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Flowey",
-        "description": "Voegt het paneel Flows toe aan de zijbalk. Flows worden opgeslagen als gewone Home Assistant-automatiseringen."
+        "description": "Voegt het paneel Flowey toe aan de zijbalk. Flows worden opgeslagen als gewone Home Assistant-automatiseringen."
       }
     },
     "abort": {

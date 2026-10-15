@@ -94,6 +94,7 @@ export type ActionData =
   | WaitData
   | RepeatData
   | TimerActionData
+  | RemoteData
   | {
       kind: "notify";
       /** "persistent" (HA notification), "service:notify.x" (legacy) or "entity:notify.y" (notify entity). */
@@ -138,6 +139,17 @@ export interface TimerActionData {
   action?: "start" | "cancel" | "pause" | "finish";
   /** For "start": overrides the timer's own duration. */
   duration?: Duration;
+}
+
+/** Sends a button learned on a Broadlink remote (page "Afstandsbediening"). Compiles to remote.send_command. */
+export interface RemoteData {
+  kind: "remote";
+  entity_id?: string;
+  /** Broadlink "device": the group the button was learned in (e.g. "TV"). */
+  device?: string;
+  command?: string;
+  /** How many times the button is sent (num_repeats). */
+  repeats?: number | string;
 }
 
 /** Repeat the cards on the "loop" output; afterwards continue via "done". */
